@@ -3,4 +3,5 @@
 members = [
     "pine-a64-boot",
     "pine-a64",
+    "pine-a64-hal",
 ]

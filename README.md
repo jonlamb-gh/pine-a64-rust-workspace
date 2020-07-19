@@ -37,6 +37,13 @@ TODO
 
 - check svd2rust for the latest peripheral materialization patterns
 - interrupts and consts in the device crate
+- switch UART device to have aliased registers instead of multiple register blocks and type state
+- add all the PIO registers/pins/etc
 - generate UART1-4 impls with a macro
+- CCU device for peripheral resets/etc
+
+https://docs.rs/embedded-hal/0.2.4/embedded_hal/
 
 https://github.com/torvalds/linux/blob/master/drivers/tty/serial/8250/8250_dw.c
+
+https://github.com/stm32-rs/stm32f1xx-hal

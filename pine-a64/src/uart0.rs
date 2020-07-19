@@ -1,6 +1,10 @@
 //! UART0
 //!
 //! Synopsys DesignWare ABP UART
+//!
+//! Size: 1K
+//! Rx: PB9, PF4
+//! Tx: PB8, PF2
 
 use crate::uart_common::{
     NotConfigured, Receive, ReceiveRegisterBlock, RegisterBlock, Transmit, TransmitRegisterBlock,
