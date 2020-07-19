@@ -1,0 +1,10 @@
+[package]
+name = "pine-a64"
+version = "0.1.0"
+authors = ["Jon Lamb"]
+edition = "2018"
+
+[dependencies]
+typenum = "1.10"
+bounded-registers = "0.1"
+static_assertions = "1.1"

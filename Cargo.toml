@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "pine-a64-boot",
+    "pine-a64",
+]
