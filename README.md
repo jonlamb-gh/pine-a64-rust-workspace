@@ -41,7 +41,7 @@ TODO
 - switch UART device to have aliased registers instead of multiple register blocks and type state
 - add all the PIO registers/pins/etc
 - gpio ExtiPin patterns
-- generate UART1-4 impls with a macro
+- generate UART1-4 device/reg impls with a macro
 - CCU device for peripheral resets/etc
 - use Infallible instead of Void
 

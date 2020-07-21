@@ -131,6 +131,66 @@ register! {
             Af4 = U6,
             Disabled = U7
         ]
+        Pin10 WIDTH(U3) OFFSET(U8) [
+            Input = U0,
+            Output = U1,
+            Af0 = U2,
+            Af1 = U3,
+            Af2 = U4,
+            Af3 = U5,
+            Af4 = U6,
+            Disabled = U7
+        ]
+        Pin11 WIDTH(U3) OFFSET(U12) [
+            Input = U0,
+            Output = U1,
+            Af0 = U2,
+            Af1 = U3,
+            Af2 = U4,
+            Af3 = U5,
+            Af4 = U6,
+            Disabled = U7
+        ]
+        Pin12 WIDTH(U3) OFFSET(U16) [
+            Input = U0,
+            Output = U1,
+            Af0 = U2,
+            Af1 = U3,
+            Af2 = U4,
+            Af3 = U5,
+            Af4 = U6,
+            Disabled = U7
+        ]
+        Pin13 WIDTH(U3) OFFSET(U20) [
+            Input = U0,
+            Output = U1,
+            Af0 = U2,
+            Af1 = U3,
+            Af2 = U4,
+            Af3 = U5,
+            Af4 = U6,
+            Disabled = U7
+        ]
+        Pin14 WIDTH(U3) OFFSET(U24) [
+            Input = U0,
+            Output = U1,
+            Af0 = U2,
+            Af1 = U3,
+            Af2 = U4,
+            Af3 = U5,
+            Af4 = U6,
+            Disabled = U7
+        ]
+        Pin15 WIDTH(U3) OFFSET(U28) [
+            Input = U0,
+            Output = U1,
+            Af0 = U2,
+            Af1 = U3,
+            Af2 = U4,
+            Af3 = U5,
+            Af4 = U6,
+            Disabled = U7
+        ]
     ]
 }
 
@@ -208,7 +268,102 @@ register! {
     u32,
     RW,
     Fields [
-        Data WIDTH(U20) OFFSET(U0)
+        Pin0 WIDTH(U2) OFFSET(U0) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin1 WIDTH(U2) OFFSET(U2) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin2 WIDTH(U2) OFFSET(U4) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin3 WIDTH(U2) OFFSET(U6) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin4 WIDTH(U2) OFFSET(U8) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin5 WIDTH(U2) OFFSET(U10) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin6 WIDTH(U2) OFFSET(U12) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin7 WIDTH(U2) OFFSET(U14) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin8 WIDTH(U2) OFFSET(U16) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin9 WIDTH(U2) OFFSET(U18) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin10 WIDTH(U2) OFFSET(U20) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin11 WIDTH(U2) OFFSET(U22) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin12 WIDTH(U2) OFFSET(U24) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin13 WIDTH(U2) OFFSET(U26) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin14 WIDTH(U2) OFFSET(U28) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
+        Pin15 WIDTH(U2) OFFSET(U30) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
     ]
 }
 
@@ -217,7 +372,12 @@ register! {
     u32,
     RW,
     Fields [
-        Data WIDTH(U20) OFFSET(U0)
+        Pin16 WIDTH(U2) OFFSET(U0) [
+            Level0 = U0,
+            Level1 = U1,
+            Level2 = U2,
+            Level3 = U3
+        ]
     ]
 }
 
@@ -272,6 +432,36 @@ register! {
             PullDown = U2
         ]
         Pin9 WIDTH(U2) OFFSET(U18) [
+            Disabled = U0,
+            PullUp = U1,
+            PullDown = U2
+        ]
+        Pin10 WIDTH(U2) OFFSET(U20) [
+            Disabled = U0,
+            PullUp = U1,
+            PullDown = U2
+        ]
+        Pin11 WIDTH(U2) OFFSET(U22) [
+            Disabled = U0,
+            PullUp = U1,
+            PullDown = U2
+        ]
+        Pin12 WIDTH(U2) OFFSET(U24) [
+            Disabled = U0,
+            PullUp = U1,
+            PullDown = U2
+        ]
+        Pin13 WIDTH(U2) OFFSET(U26) [
+            Disabled = U0,
+            PullUp = U1,
+            PullDown = U2
+        ]
+        Pin14 WIDTH(U2) OFFSET(U28) [
+            Disabled = U0,
+            PullUp = U1,
+            PullDown = U2
+        ]
+        Pin15 WIDTH(U2) OFFSET(U30) [
             Disabled = U0,
             PullUp = U1,
             PullDown = U2
