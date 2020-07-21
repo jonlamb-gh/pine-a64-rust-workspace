@@ -36,14 +36,33 @@ TODO
 ## TODOs
 
 - check svd2rust for the latest peripheral materialization patterns
+- update the boot crate to use `llvm_asm!`
 - interrupts and consts in the device crate
 - switch UART device to have aliased registers instead of multiple register blocks and type state
 - add all the PIO registers/pins/etc
+- gpio ExtiPin patterns
 - generate UART1-4 impls with a macro
 - CCU device for peripheral resets/etc
+- use Infallible instead of Void
+
+
+https://github.com/rust-embedded/svd2rust/blob/master/src/generate/peripheral.rs
+https://github.com/rust-embedded/svd2rust/blob/master/src/generate/generic.rs
+
+https://github.com/michalsc/Emu68/tree/master/src/pine64
+https://github.com/krjdev/rock64_bare-metal
 
 https://docs.rs/embedded-hal/0.2.4/embedded_hal/
+https://docs.rs/embedded-time/0.7.1/embedded_time/
+
+https://github.com/torvalds/linux/blob/master/drivers/pinctrl/sunxi/pinctrl-sun50i-a64.c
+https://github.com/torvalds/linux/blob/master/drivers/pinctrl/sunxi/pinctrl-sunxi.c
+https://github.com/torvalds/linux/blob/master/drivers/pinctrl/sunxi/pinctrl-sunxi.h
 
 https://github.com/torvalds/linux/blob/master/drivers/tty/serial/8250/8250_dw.c
 
 https://github.com/stm32-rs/stm32f1xx-hal
+https://github.com/stm32-rs/stm32f1xx-hal/blob/master/src/rcc.rs
+https://github.com/stm32-rs/stm32f1xx-hal/blob/master/src/gpio.rs
+
+
