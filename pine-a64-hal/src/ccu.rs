@@ -1,4 +1,6 @@
 use crate::pac::ccu::{BusClockGating2, BusClockGating3, BusSoftReset4, CCU};
+use core::convert::TryInto;
+use embedded_time::{units::Hertz, Period};
 
 pub trait CcuExt {
     fn constrain(self) -> Ccu;
@@ -11,6 +13,48 @@ impl CcuExt for CCU {
             bcg3: BCG3 { _0: () },
             bsr4: BSR4 { _0: () },
         }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct Clocks {
+    cpu: Hertz,
+    ahb1: Hertz,
+    ahb2: Hertz,
+    apb1: Hertz,
+    apb2: Hertz,
+}
+
+impl Clocks {
+    pub fn read() -> Self {
+        Clocks {
+            // TODO
+            cpu: Period::new(1, 1_000_000).try_into().expect("TODO"),
+            ahb1: Period::new(1, 1_000_000).try_into().expect("TODO"),
+            ahb2: Period::new(1, 1_000_000).try_into().expect("TODO"),
+            apb1: Period::new(1, 1_000_000).try_into().expect("TODO"),
+            apb2: Period::new(1, 1_000_000).try_into().expect("TODO"),
+        }
+    }
+
+    pub fn cpu(&self) -> Hertz {
+        self.cpu
+    }
+
+    pub fn ahb1(&self) -> Hertz {
+        self.ahb1
+    }
+
+    pub fn ahb2(&self) -> Hertz {
+        self.ahb2
+    }
+
+    pub fn apb1(&self) -> Hertz {
+        self.apb1
+    }
+
+    pub fn apb2(&self) -> Hertz {
+        self.apb2
     }
 }
 
