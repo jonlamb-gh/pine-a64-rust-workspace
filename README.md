@@ -53,19 +53,51 @@ Stuff for the PinePhone BSP crate
 - PinePhone debug UART is UART0, PB8/PB9
 
 
+some configs from `u-boot.cfg` from `pine64-lts_defconfig`:
+
+```text
+#define CONFIG_SUNXI_GEN_SUN6I 1
+#define CONFIG_MACH_SUN50I 1
+#define CONFIG_MMC_SUNXI 1
+#define CONFIG_SUNXI_DE2 1
+#define CONFIG_SYS_CONFIG_NAME "sun50i"
+#define CONFIG_SUN8I_EMAC 1
+#define CONFIG_SUNXI_DRAM_MAX_SIZE 0xC0000000
+#define CONFIG_ARCH_SUNXI 1
+#define CONFIG_SUNXI_GPIO 1
+#define CONFIG_CLK_SUN50I_A64 1
+#define CONFIG_SUN6I_PRCM 1
+#define CONFIG_CLK_SUNXI 1
+#define CONFIG_PHY_SUN4I_USB 1
+#define CONFIG_DEFAULT_DEVICE_TREE "sun50i-a64-pine64-lts"
+```
+arch/arm/include/asm/arch-sunxi/cpu_sun4i.h
+
 boot process in
 https://github.com/u-boot/u-boot/blob/master/board/sunxi/README.sunxi64
 
 u-boot sunxi video drivers
 https://github.com/u-boot/u-boot/tree/master/drivers/video/sunxi
 
-arch/arm/include/asm/arch-sunxi/cpu_sun4i.h
-CONFIG_MACH_SUN50I
-
 A10 display pipeline docs
 https://www.kernel.org/doc/Documentation/devicetree/bindings/display/sunxi/sun4i-drm.txt
 
 framebuff-lcd in
+```text
+tcon0: lcd-controller@0x01C0_C000, allwinner,sun50i-a64-tcon-lcd
+tcon1: lcd-controller@0x01C0_D000, allwinner,sun50i-a64-tcon-tv
+
+TODO - are the mixer addresses relative to the DE block 0x0100_0000--0x013F_FFFF ?
+mixer0: mixer@0x0010_0000 ,allwinner,sun50i-a64-de2-mixer-0
+mixer1: mixer@0x0020_0000, allwinner,sun50i-a64-de2-mixer-1
+
+video-codec@0x01C0_E000, allwinner,sun50i-a64-video-engine
+hdmi: hdmi@0x01EE_0000, allwinner,sun50i-a64-dw-hdmi
+hdmi_phy: hdmi-phy@01EF_0000, allwinner,sun50i-a64-hdmi-phy
+
+deinterlace: deinterlace@0x01e0_0000, allwinner,sun50i-a64-deinterlace
+0x01E0_0000---0x01E1_FFFF
+```
 https://github.com/torvalds/linux/blob/master/arch/arm64/boot/dts/allwinner/sun50i-a64.dtsi
 
 video engine: sun50i-a64-video-engine

@@ -8,6 +8,8 @@ extern crate typenum;
 
 pub mod ccu;
 pub mod pio;
+pub mod tcon0;
+pub mod tcon1;
 pub mod uart0;
 pub mod uart1;
 pub mod uart2;
