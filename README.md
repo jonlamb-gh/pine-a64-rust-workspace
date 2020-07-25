@@ -36,6 +36,7 @@ TODO
 ## TODOs
 
 - check svd2rust for the latest peripheral materialization patterns
+  * https://github.com/rust-embedded/cortex-m/commit/64dc07d286163bc0c666b7d7058107c3f688bb32
 - interrupts and consts in the device crate
   * https://github.com/rust-embedded/cortex-m/pull/241
   * https://github.com/rust-embedded/cortex-m/pull/235
@@ -47,6 +48,7 @@ TODO
 - CCU device for peripheral resets/etc
 - use Infallible instead of Void
 - BSP crates: pine-a64-lts and pinephone
+- PR on bounded-regs for having a field named `Width` breaking things
 
 
 Stuff for the PinePhone BSP crate
@@ -70,6 +72,9 @@ some configs from `u-boot.cfg` from `pine64-lts_defconfig`:
 #define CONFIG_CLK_SUNXI 1
 #define CONFIG_PHY_SUN4I_USB 1
 #define CONFIG_DEFAULT_DEVICE_TREE "sun50i-a64-pine64-lts"
+#define CONFIG_DM_VIDEO 1
+#define CONFIG_VIDEO_DT_SIMPLEFB 1
+#define CONFIG_VIDEO_DE2 1
 ```
 arch/arm/include/asm/arch-sunxi/cpu_sun4i.h
 
@@ -87,13 +92,33 @@ framebuff-lcd in
 tcon0: lcd-controller@0x01C0_C000, allwinner,sun50i-a64-tcon-lcd
 tcon1: lcd-controller@0x01C0_D000, allwinner,sun50i-a64-tcon-tv
 
+cpu_sun4i.h
+SUNXI_DE2_BASE = 0x0100_0000
+
+display2.h
+SUNXI_DE2_BASE == struct de_clk
+SUNXI_DE2_MUX0_BASE = SUNXI_DE2_BASE + 0x10_0000
+SUNXI_DE2_MUX1_BASE = SUNXI_DE2_BASE + 0x20_0000
+
+each mixer reg block is identical
+SUNXI_DE2_MUX_GLB_REGS, struct de_glb
+
+TODO check the CSC offsets u-boot vs linux seem off
+SUNXI_DE2_MUX_DCSC_REGS = 0xb0000 = struct de_csc
+in linux they use DE3_BLD_BASE 0x0800 as the offset?
+
+also in linux, SUN50I vs SUN8I registers are at different addresses
+
 TODO - are the mixer addresses relative to the DE block 0x0100_0000--0x013F_FFFF ?
 mixer0: mixer@0x0010_0000 ,allwinner,sun50i-a64-de2-mixer-0
 mixer1: mixer@0x0020_0000, allwinner,sun50i-a64-de2-mixer-1
 
 video-codec@0x01C0_E000, allwinner,sun50i-a64-video-engine
+
 hdmi: hdmi@0x01EE_0000, allwinner,sun50i-a64-dw-hdmi
 hdmi_phy: hdmi-phy@01EF_0000, allwinner,sun50i-a64-hdmi-phy
+
+ddc-i2c-bus == i2c3 ?
 
 deinterlace: deinterlace@0x01e0_0000, allwinner,sun50i-a64-deinterlace
 0x01E0_0000---0x01E1_FFFF
@@ -108,6 +133,7 @@ sun50i-a64-display-engine
 https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/sun4i/sun4i_drv.c
 
 sun50i-a64-de2-mixer-0
+https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/sun4i/sun8i_mixer.h
 https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/sun4i/sun8i_mixer.c
 
 
@@ -136,6 +162,5 @@ https://github.com/stm32-rs/stm32f1xx-hal/blob/master/src/rcc.rs
 https://github.com/stm32-rs/stm32f1xx-hal/blob/master/src/gpio.rs
 
 https://github.com/japaric/stm32f30x-hal/blob/master/src/serial.rs
-
 
 https://www.freertos.org/Using-FreeRTOS-on-Cortex-A-Embedded-Processors.html

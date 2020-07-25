@@ -7,6 +7,8 @@ extern crate bounded_registers;
 extern crate typenum;
 
 pub mod ccu;
+pub mod de;
+pub mod de_mixer;
 pub mod pio;
 pub mod tcon0;
 pub mod tcon1;

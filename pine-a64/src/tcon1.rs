@@ -2,8 +2,8 @@
 //!
 //! Size: 4K
 
-//use core::marker::PhantomData;
-//use core::ops::{Deref, DerefMut};
+use core::marker::PhantomData;
+use core::ops::{Deref, DerefMut};
 use static_assertions::const_assert_eq;
 
 pub const PADDR: usize = 0x01C0_D000;
@@ -135,4 +135,47 @@ pub struct RegisterBlock {
     __reserved_1: [u32; 17],               // 0x0AC
     pub io_polarity: IoPolarity::Register, // 0x0F0
     pub io_trigger: IoTrigger::Register,   // 0x0F4
+}
+
+pub struct TCON1 {
+    _marker: PhantomData<*const ()>,
+}
+
+unsafe impl Send for TCON1 {}
+
+impl TCON1 {
+    pub unsafe fn from_paddr() -> Self {
+        Self {
+            _marker: PhantomData,
+        }
+    }
+
+    pub fn as_ptr(&self) -> *const RegisterBlock {
+        PADDR as *const _
+    }
+
+    pub const unsafe fn ptr() -> *const RegisterBlock {
+        PADDR as *const _
+    }
+
+    pub fn as_mut_ptr(&mut self) -> *mut RegisterBlock {
+        PADDR as *mut _
+    }
+
+    pub const unsafe fn mut_ptr() -> *mut RegisterBlock {
+        PADDR as *mut _
+    }
+}
+
+impl Deref for TCON1 {
+    type Target = RegisterBlock;
+    fn deref(&self) -> &RegisterBlock {
+        unsafe { &*self.as_ptr() }
+    }
+}
+
+impl DerefMut for TCON1 {
+    fn deref_mut(&mut self) -> &mut RegisterBlock {
+        unsafe { &mut *self.as_mut_ptr() }
+    }
 }
