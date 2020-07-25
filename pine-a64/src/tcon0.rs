@@ -42,7 +42,19 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        ModeB WIDTH(U1) OFFSET(U4) [
+            SixBit = U0,
+            FiveBit = U1
+        ]
+        ModeG WIDTH(U1) OFFSET(U5) [
+            SixBit = U0,
+            FiveBit = U1
+        ]
+        ModeR WIDTH(U1) OFFSET(U6) [
+            SixBit = U0,
+            FiveBit = U1
+        ]
+        Enable WIDTH(U1) OFFSET(U31)
     ]
 }
 
@@ -78,7 +90,11 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        SrcSel WIDTH(U3) OFFSET(U0),
+        StartDelay WIDTH(U5) OFFSET(U4),
+        Fifo1Reset WIDTH(U1) OFFSET(U21),
+        RBSwap WIDTH(U1) OFFSET(U23),
+        Enable WIDTH(U1) OFFSET(U31)
     ]
 }
 
@@ -87,7 +103,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Divider WIDTH(U7) OFFSET(U0),
+        Enable WIDTH(U4) OFFSET(U28)
     ]
 }
 
@@ -96,7 +113,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Y WIDTH(U12) OFFSET(U0),
+        X WIDTH(U12) OFFSET(U16),
     ]
 }
 
@@ -105,7 +123,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        HorizBackPorch WIDTH(U12) OFFSET(U0),
+        Ht WIDTH(U13) OFFSET(U16),
     ]
 }
 
@@ -114,7 +133,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        VertBackPorch WIDTH(U12) OFFSET(U0),
+        Vt WIDTH(U13) OFFSET(U16),
     ]
 }
 
@@ -123,7 +143,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Vspw WIDTH(U10) OFFSET(U0),
+        Hspw WIDTH(U10) OFFSET(U16),
     ]
 }
 
@@ -177,7 +198,28 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        DataPolarity WIDTH(U4) OFFSET(U0),
+        ClockPolarity WIDTH(U1) OFFSET(U4),
+        ClockSelect WIDTH(U1) OFFSET(U20),
+        CorrectMode WIDTH(U1) OFFSET(U23),
+        DebugMode WIDTH(U1) OFFSET(U24),
+        BitWidth WIDTH(U1) OFFSET(U26) [
+            Bits24 = U0,
+            Bits18 = U1
+        ]
+        Mode WIDTH(U1) OFFSET(U27) [
+            Ns = U0,
+            Jeida = U1
+        ]
+        Direction WIDTH(U1) OFFSET(U28) [
+            Normal = U0,
+            Reverse = U1
+        ]
+        EvenOddDirection WIDTH(U1) OFFSET(U29) [
+            Normal = U0,
+            Reverse = U1
+        ]
+        Enable WIDTH(U1) OFFSET(U31)
     ]
 }
 
@@ -186,16 +228,27 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        DataInvert WIDTH(U24) OFFSET(U0),
+        Io0Invert WIDTH(U1) OFFSET(U24),
+        Io1Invert WIDTH(U1) OFFSET(U25),
+        Io2Invert WIDTH(U1) OFFSET(U26),
+        Io3Invert WIDTH(U1) OFFSET(U27),
+        DataClockSelect WIDTH(U3) OFFSET(U28),
+        IoOutputSelect WIDTH(U1) OFFSET(U31),
     ]
 }
 
 register! {
-    IoTrigger,
+    IoTristate,
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        DataOutputTriEnable WIDTH(U24) OFFSET(U0),
+        Io0OutputTriEnable WIDTH(U1) OFFSET(U24),
+        Io1OutputTriEnable WIDTH(U1) OFFSET(U25),
+        Io2OutputTriEnable WIDTH(U1) OFFSET(U26),
+        Io3OutputTriEnable WIDTH(U1) OFFSET(U27),
+        RgbEndian WIDTH(U1) OFFSET(U28),
     ]
 }
 
@@ -204,7 +257,18 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        RegPwSmb WIDTH(U1) OFFSET(U0),
+        RegPwSlv WIDTH(U1) OFFSET(U1),
+        RegPd WIDTH(U2) OFFSET(U4),
+        RegV WIDTH(U2) OFFSET(U8),
+        RegDen WIDTH(U4) OFFSET(U12),
+        RegDenC WIDTH(U1) OFFSET(U16),
+        RegC WIDTH(U2) OFFSET(U17),
+        RegDRamTest WIDTH(U1) OFFSET(U19),
+        EnDrv WIDTH(U4) OFFSET(U20),
+        EnDrvC WIDTH(U1) OFFSET(U24),
+        EnLdo WIDTH(U1) OFFSET(U30),
+        EnMb WIDTH(U1) OFFSET(U31),
     ]
 }
 
@@ -235,7 +299,7 @@ pub struct RegisterBlock {
     __reserved_2: [u32; 5],                  // 0x070
     pub lvds_iface: LvdsIface::Register,     // 0x084
     pub io_polarity: IoPolarity::Register,   // 0x088
-    pub io_trigger: IoTrigger::Register,     // 0x08C
+    pub io_tristate: IoTristate::Register,   // 0x08C
     __reserved_3: [u32; 100],                // 0x090
     pub lvds_analog0: LvdsAnalog0::Register, // 0x220
 }

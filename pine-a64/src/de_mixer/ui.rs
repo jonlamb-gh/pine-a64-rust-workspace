@@ -3,12 +3,18 @@
 use super::NUM_CHANNEL_CONFIGS;
 use static_assertions::const_assert_eq;
 
+// See https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/sun4i/sun8i_mixer.h#L75
+// for the format values
 register! {
     Attr,
     u32,
     RW,
     Fields [
-         Bits WIDTH(U32) OFFSET(U0),
+         Enable WIDTH(U1) OFFSET(U0),
+         Format WIDTH(U4) OFFSET(U8) [
+             XRgb8888 = U4,
+             Rgb565 = U10
+         ]
     ]
 }
 
