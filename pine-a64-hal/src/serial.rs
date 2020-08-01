@@ -11,7 +11,9 @@ use crate::pac::uart_common::{
 use crate::pac::{uart0::UART0, uart1::UART1, uart2::UART2, uart3::UART3, uart4::UART4};
 use crate::units::Bps;
 use core::convert::Infallible;
+use core::fmt;
 use core::marker::PhantomData;
+use nb::block;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Error {
@@ -161,6 +163,7 @@ macro_rules! hal {
                     //
                     // Add half of the denominator to deal with rounding errors
                     // TODO - need to figure out which clock to use
+                    // double check device tree, might be apb2
                     let divisor = (clocks.apb1().0 + (8 * baud_rate.0)) / (16 * baud_rate.0);
                     let lsb = divisor & 0xFF;
                     let msb = (divisor >> 8) & 0xFF;
@@ -243,6 +246,22 @@ macro_rules! hal {
                     }
                 }
             }
+
+            impl<RxTx> core::fmt::Write for Tx<$UARTX<RxTx>> {
+                fn write_str(&mut self, s: &str) -> fmt::Result {
+                    use serial::Write;
+                    for b in s.bytes() {
+                        // Convert '\n' to '\r\n'
+                        //if b as char == '\n' {
+                        //    block!(self.write('\r' as _)).ok();
+                        //}
+                        //block!(self.write(b)).map_err(|_| fmt::Error)?;
+                        block!(self.write(b)).ok();
+                    }
+                    Ok(())
+                }
+            }
+
         )+
     }
 }

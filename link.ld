@@ -26,12 +26,8 @@ ENTRY(_boot_cores);
 
 SECTIONS
 {
-    /* TODO - update me */
-    /* bare metal */
-    /* . = 0x40000000; */
-
     /* See the u-boot env variable `load_addr`. */
-    . = 0x40000000;
+    . = 0x42000000;
 
     .text :
     {

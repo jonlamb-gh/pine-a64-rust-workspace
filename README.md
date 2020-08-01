@@ -20,6 +20,10 @@ Copy elf to binary:
 cargo objcopy -- -O binary target/aarch64-unknown-none/release/<img> /dest/<img>.bin
 ```
 
+```bash
+cargo objcopy --release -- -O binary /dest/<img>.bin
+```
+
 ## U-boot
 
 TODO - track u-boot.cfg here

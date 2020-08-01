@@ -29,10 +29,27 @@ impl Clocks {
     pub fn read() -> Self {
         Clocks {
             // TODO
+            // 272_000_000
+            //
+            // COUNTER_FREQUENCY: 24_000_000
+            // uart needs apb1
+            // double check device tree, might be apb2
+            //
+            // Clock: apb2, parent: osc24M(1), freq: 24000000
+            // Clock: apb1, parent: ahb1(0), freq: 75000000
+            // Clock: apb, parent: cpux(0), freq: 272000000
+            // Clock: ahb0, parent: ar100(0), freq: 32768
+            // awg0: AHB frequency 150000000 Hz, MDC div: 0x2
+            //
+            // Clock: ahb1, parent: pll_periph0(3), freq: 300000000
+            // Clock: ahb2, parent: pll_periph0(1), freq: 150000000
+            // Clock: cpux, parent: pll_cpux(2), freq: 816000000
+            //
+            // Clock: bus-uart0, parent: apb2(0), freq: 24000000
             cpu: Period::new(1, 1_000_000).try_into().expect("TODO"),
             ahb1: Period::new(1, 1_000_000).try_into().expect("TODO"),
             ahb2: Period::new(1, 1_000_000).try_into().expect("TODO"),
-            apb1: Period::new(1, 1_000_000).try_into().expect("TODO"),
+            apb1: Period::new(1, 24_000_000).try_into().expect("TODO"),
             apb2: Period::new(1, 1_000_000).try_into().expect("TODO"),
         }
     }
