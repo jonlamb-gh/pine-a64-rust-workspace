@@ -27,6 +27,26 @@ pub enum Error {
     Fifo,
 }
 
+/// Alias to `write!` that drops the result
+#[macro_export]
+macro_rules! console_write {
+    ($dst:expr, $($arg:tt)*) => (writeln!($dst, $($arg)*).ok())
+}
+
+/// Alias to `writeln!` that drops the result
+#[macro_export]
+macro_rules! console_writeln {
+    ($dst:expr) => (
+        write!($dst, "\n").ok()
+    );
+    ($dst:expr,) => (
+        writeln!($dst).ok()
+    );
+    ($dst:expr, $($arg:tt)*) => (
+        writeln!($dst, $($arg)*).ok()
+    );
+}
+
 // TODO - these should be "closed" traits
 pub trait Pins<UART> {}
 pub trait PinTx<UART> {}
@@ -251,12 +271,7 @@ macro_rules! hal {
                 fn write_str(&mut self, s: &str) -> fmt::Result {
                     use serial::Write;
                     for b in s.bytes() {
-                        // Convert '\n' to '\r\n'
-                        //if b as char == '\n' {
-                        //    block!(self.write('\r' as _)).ok();
-                        //}
-                        //block!(self.write(b)).map_err(|_| fmt::Error)?;
-                        block!(self.write(b)).ok();
+                        block!(self.write(b)).map_err(|_| fmt::Error)?;
                     }
                     Ok(())
                 }

@@ -3,16 +3,14 @@
 
 extern crate pine_a64_hal as hal;
 
-//use crate::hal::prelude::*;
-use crate::hal::ccu::*;
-use crate::hal::gpio::*;
-use crate::hal::pac;
+use crate::hal::ccu::Clocks;
+use crate::hal::console_writeln;
 use crate::hal::pac::ccu::CCU;
 use crate::hal::pac::pio::PIO;
 use crate::hal::pac::uart0::UART0;
 use crate::hal::pac::uart_common::NotConfigured;
-use crate::hal::serial::*;
-use crate::hal::units::Bps;
+use crate::hal::prelude::*;
+use crate::hal::serial::Serial;
 use core::fmt::Write;
 
 fn kernel_entry() -> ! {
@@ -29,12 +27,17 @@ fn kernel_entry() -> ! {
     let rx = gpio.pb.pb9.into_alternate_af2();
 
     let uart0: UART0<NotConfigured> = unsafe { UART0::from_paddr() };
-    let serial = Serial::uart0(uart0, (tx, rx), Bps(115200), clocks, &mut ccu);
+    let serial = Serial::uart0(uart0, (tx, rx), 115_200.bps(), clocks, &mut ccu);
     let (mut serial, _rx) = serial.split();
-    writeln!(serial, "{:#?}", clocks).ok();
+    console_writeln!(serial, "{:#?}", clocks);
 
+    let mut cnt: usize = 0;
     loop {
-        writeln!(serial, "UART0 example").ok();
+        console_writeln!(serial, "UART0 example: {}", cnt);
+        for _i in 0..core::u32::MAX / 32 {
+            hal::cortex_a::asm::nop();
+        }
+        cnt = cnt.wrapping_add(1);
     }
 }
 
