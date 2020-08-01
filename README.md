@@ -22,7 +22,35 @@ cargo objcopy -- -O binary target/aarch64-unknown-none/release/<img> /dest/<img>
 
 ## U-boot
 
-TODO
+TODO - track u-boot.cfg here
+
+```bash
+CONFIG_CMD_CACHE=y
+CONFIG_ENV_FAT_DEVICE_AND_PART="0:auto"
+
+ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make pine64-lts_defconfig
+ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- make
+dd if=u-boot-sunxi-with-spl.bin of=/dev/sda bs=1k seek=8
+```
+
+```text
+U-Boot SPL 2020.10-rc1-00148-g719f42190d-dirty (Aug 01 2020 - 07:59:39 -0700)
+...
+
+U-Boot 2020.10-rc1-00148-g719f42190d-dirty (Aug 01 2020 - 08:04:33 -0700) Allwinner Technology
+...
+```
+
+Environment:
+
+```bash
+setenv imgname img.bin
+
+setenv loadaddr 0x42000000 ?
+
+# Make sure the caches are off for now
+setenv bootimg 'tftp ${loadaddr} ${serverip}:${imgname}; dcache flush; dcache off; go ${loadaddr}'
+```
 
 ## Links
 
@@ -33,7 +61,7 @@ TODO
 - [sun50i-a64-sopine.dtsi](https://github.com/torvalds/linux/blob/master/arch/arm64/boot/dts/allwinner/sun50i-a64-sopine.dtsi)
 - [sun50i-a64.dtsi](https://github.com/torvalds/linux/blob/master/arch/arm64/boot/dts/allwinner/sun50i-a64.dtsi)
 
-## TODOs
+## ...
 
 - check svd2rust for the latest peripheral materialization patterns
   * https://github.com/rust-embedded/cortex-m/commit/64dc07d286163bc0c666b7d7058107c3f688bb32
@@ -54,6 +82,23 @@ TODO
 Stuff for the PinePhone BSP crate
 - PinePhone debug UART is UART0, PB8/PB9
 
+this u-boot image works differently than upstream u-boot?
+https://github.com/apritzel/pine64
+https://github.com/apritzel/u-boot.git -b sunxi64-image-20180316
+sun50i-a64-lpddr3_defconfig
+
+https://github.com/longsleep/build-pine64-image/tree/master/blobs
+https://github.com/armbian/build/tree/master/packages/blobs/sunxi/a64
+
+this works:
+
+```bash
+spl from https://github.com/apritzel/u-boot.git, branch: sunxi64-image-20180316
+sudo dd if=spl/sunxi-spl.bin of=/dev/sda bs=8k seek=1
+
+u-boot from upstream
+sudo dd if=u-boot.itb of=/dev/sda bs=8k seek=5
+```
 
 some configs from `u-boot.cfg` from `pine64-lts_defconfig`:
 
