@@ -1,5 +1,5 @@
 [package]
-name = "pine-a64-hal"
+name = "pine64-hal"
 version = "0.1.0"
 authors = ["Jon Lamb"]
 edition = "2018"
@@ -14,5 +14,5 @@ embedded-time = "0.7"
 features = ["unproven"]
 version = "0.2"
 
-[dependencies.pine-a64]
-path = "../pine-a64"
+[dependencies.pine64]
+path = "../pine64"

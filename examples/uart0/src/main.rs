@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-extern crate pine_a64_hal as hal;
+extern crate pine64_hal as hal;
 
 use crate::hal::ccu::Clocks;
 use crate::hal::console_writeln;
@@ -40,4 +40,4 @@ fn kernel_entry() -> ! {
     }
 }
 
-pine_a64_boot::entry!(kernel_entry);
+pine64_boot::entry!(kernel_entry);

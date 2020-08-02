@@ -1,14 +1,14 @@
 use core::fmt::Write;
 use core::intrinsics;
 use core::panic::PanicInfo;
-use pine_a64_hal::ccu::Clocks;
-use pine_a64_hal::console_writeln;
-use pine_a64_hal::pac::ccu::CCU;
-use pine_a64_hal::pac::pio::PIO;
-use pine_a64_hal::pac::uart0::UART0;
-use pine_a64_hal::pac::uart_common::NotConfigured;
-use pine_a64_hal::prelude::*;
-use pine_a64_hal::serial::Serial;
+use pine64_hal::ccu::Clocks;
+use pine64_hal::console_writeln;
+use pine64_hal::pac::ccu::CCU;
+use pine64_hal::pac::pio::PIO;
+use pine64_hal::pac::uart0::UART0;
+use pine64_hal::pac::uart_common::NotConfigured;
+use pine64_hal::prelude::*;
+use pine64_hal::serial::Serial;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {

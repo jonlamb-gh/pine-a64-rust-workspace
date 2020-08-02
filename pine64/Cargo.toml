@@ -1,5 +1,5 @@
 [package]
-name = "pine-a64"
+name = "pine64"
 version = "0.1.0"
 authors = ["Jon Lamb"]
 edition = "2018"

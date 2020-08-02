@@ -1,8 +1,8 @@
 [workspace]
 
 members = [
-    "pine-a64-boot",
-    "pine-a64",
-    "pine-a64-hal",
+    "pine64-boot",
+    "pine64",
+    "pine64-hal",
     "examples/uart0",
 ]

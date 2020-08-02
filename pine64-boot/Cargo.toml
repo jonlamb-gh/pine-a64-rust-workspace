@@ -1,5 +1,5 @@
 [package]
-name = "pine-a64-boot"
+name = "pine64-boot"
 version = "0.1.0"
 authors = ["Jon Lamb"]
 edition = "2018"
@@ -8,11 +8,11 @@ edition = "2018"
 cortex-a = "3.0"
 r0 = "1.0"
 
-[dependencies.pine-a64-hal]
-path = "../pine-a64-hal"
+[dependencies.pine64-hal]
+path = "../pine64-hal"
 optional = true
 
 [features]
 default = []
 panic-abort = []
-panic-uart = ["pine-a64-hal"]
+panic-uart = ["pine64-hal"]

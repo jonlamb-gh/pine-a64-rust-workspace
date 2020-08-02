@@ -67,7 +67,6 @@ setenv bootimg 'tftp ${loadaddr} ${serverip}:${imgname}; dcache flush; dcache of
 
 ## ...
 
-- rename `pine-a64...` to `pine64...`
 - check svd2rust for the latest peripheral materialization patterns
   * https://github.com/rust-embedded/cortex-m/commit/64dc07d286163bc0c666b7d7058107c3f688bb32
 - interrupts and consts in the device crate

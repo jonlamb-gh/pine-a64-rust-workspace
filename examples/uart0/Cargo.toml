@@ -6,10 +6,10 @@ edition = "2018"
 
 [dependencies]
 
-[dependencies.pine-a64-hal]
-path = "../../pine-a64-hal"
+[dependencies.pine64-hal]
+path = "../../pine64-hal"
 
-[dependencies.pine-a64-boot]
-path = "../../pine-a64-boot"
+[dependencies.pine64-boot]
+path = "../../pine64-boot"
 default-features = false
 features = ["panic-uart"]
