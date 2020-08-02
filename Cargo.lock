@@ -135,6 +135,7 @@ name = "pine-a64-boot"
 version = "0.1.0"
 dependencies = [
  "cortex-a",
+ "pine-a64-hal",
  "r0",
 ]
 

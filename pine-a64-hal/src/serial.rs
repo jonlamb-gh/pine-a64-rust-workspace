@@ -182,9 +182,7 @@ macro_rules! hal {
                     // => divisor = (serial-clock / 16) / baudrate
                     //
                     // Add half of the denominator to deal with rounding errors
-                    // TODO - need to figure out which clock to use
-                    // double check device tree, might be apb2
-                    let divisor = (clocks.apb1().0 + (8 * baud_rate.0)) / (16 * baud_rate.0);
+                    let divisor = (clocks.apb2().0 + (8 * baud_rate.0)) / (16 * baud_rate.0);
                     let lsb = divisor & 0xFF;
                     let msb = (divisor >> 8) & 0xFF;
 

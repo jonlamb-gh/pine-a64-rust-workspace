@@ -14,7 +14,6 @@ use crate::hal::serial::Serial;
 use core::fmt::Write;
 
 fn kernel_entry() -> ! {
-    // TODO - need to update clocks
     let clocks = Clocks::read();
 
     let ccu = unsafe { CCU::from_paddr() };

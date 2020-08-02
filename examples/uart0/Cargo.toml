@@ -5,9 +5,11 @@ authors = ["Jon Lamb"]
 edition = "2018"
 
 [dependencies]
-pine-a64-hal = { path = "../../pine-a64-hal" }
+
+[dependencies.pine-a64-hal]
+path = "../../pine-a64-hal"
 
 [dependencies.pine-a64-boot]
 path = "../../pine-a64-boot"
 default-features = false
-features = ["panic-abort"]
+features = ["panic-uart"]

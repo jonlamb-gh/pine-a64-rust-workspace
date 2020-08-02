@@ -3,10 +3,16 @@
 #![deny(warnings)]
 #![no_std]
 #![feature(global_asm)]
-#![cfg_attr(feature = "panic-abort", feature(core_intrinsics))]
+#![cfg_attr(
+    any(feature = "panic-abort", feature = "panic-uart"),
+    feature(core_intrinsics)
+)]
 
 #[cfg(feature = "panic-abort")]
 mod panic_abort;
+
+#[cfg(feature = "panic-uart")]
+mod panic_uart;
 
 #[macro_export]
 macro_rules! entry {

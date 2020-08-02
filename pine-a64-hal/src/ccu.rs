@@ -26,6 +26,7 @@ pub struct Clocks {
 }
 
 impl Clocks {
+    const OSC_FREQ: usize = 24_000_000;
     pub fn read() -> Self {
         Clocks {
             // TODO
@@ -49,8 +50,8 @@ impl Clocks {
             cpu: Period::new(1, 1_000_000).try_into().expect("TODO"),
             ahb1: Period::new(1, 1_000_000).try_into().expect("TODO"),
             ahb2: Period::new(1, 1_000_000).try_into().expect("TODO"),
-            apb1: Period::new(1, 24_000_000).try_into().expect("TODO"),
-            apb2: Period::new(1, 1_000_000).try_into().expect("TODO"),
+            apb1: Period::new(1, 1_000_000).try_into().expect("TODO"),
+            apb2: Period::new(1, 24_000_000).try_into().expect("TODO"),
         }
     }
 
