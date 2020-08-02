@@ -9,6 +9,104 @@ use static_assertions::const_assert_eq;
 pub const PADDR: usize = 0x01C2_0000;
 
 register! {
+    PllCpuXControl,
+    u32,
+    RO,
+    Fields [
+        FactorM WIDTH(U2) OFFSET(U0),
+        FactorK WIDTH(U2) OFFSET(U4),
+        FactorN WIDTH(U5) OFFSET(U8),
+        PllOutExtDivP WIDTH(U2) OFFSET(U16) [
+            Divide1 = U0,
+            Divide2 = U1,
+            Divide4 = U2,
+            Divide8 = U3
+        ]
+        Lock WIDTH(U1) OFFSET(U28)
+    ]
+}
+
+register! {
+    PllPeriph0Control,
+    u32,
+    RO,
+    Fields [
+        FactorK WIDTH(U2) OFFSET(U4),
+        FactorN WIDTH(U5) OFFSET(U8),
+        Lock WIDTH(U1) OFFSET(U28),
+    ]
+}
+
+register! {
+    PllPeriph1Control,
+    u32,
+    RO,
+    Fields [
+        FactorK WIDTH(U2) OFFSET(U4),
+        FactorN WIDTH(U5) OFFSET(U8),
+        Lock WIDTH(U1) OFFSET(U28),
+    ]
+}
+
+register! {
+    Ahb1Apb1Config,
+    u32,
+    RO,
+    Fields [
+        Ahb1ClockDivRatio WIDTH(U2) OFFSET(U4) [
+            Divide1 = U0,
+            Divide2 = U1,
+            Divide4 = U2,
+            Divide8 = U3
+        ]
+        Ahb1PreDiv WIDTH(U2) OFFSET(U6),
+        Apb1ClockDivRatio WIDTH(U2) OFFSET(U8) [
+            Divide2 = U1,
+            Divide4 = U2,
+            Divide8 = U3
+        ]
+        Ahb1ClockSrcSel WIDTH(U2) OFFSET(U12) [
+            LOsc = U0,
+            Osc24M = U1,
+            Axi = U2,
+            PllPeriph01x = U3
+        ]
+    ]
+}
+
+register! {
+    Apb2Config,
+    u32,
+    RO,
+    Fields [
+        RatioM WIDTH(U5) OFFSET(U0),
+        RatioN WIDTH(U2) OFFSET(U16) [
+            Divide1 = U0,
+            Divide2 = U1,
+            Divide4 = U2,
+            Divide8 = U3
+        ]
+        ClockSrcSel WIDTH(U2) OFFSET(U24) [
+            LOsc = U0,
+            Osc24M = U1,
+            PllPeriph02x = U2
+        ]
+    ]
+}
+
+register! {
+    Ahb2Config,
+    u32,
+    RO,
+    Fields [
+        ClockConfig WIDTH(U2) OFFSET(U0) [
+            Ahb1Clock = U0,
+            PllPeriph01xD2 = U1
+        ]
+    ]
+}
+
+register! {
     BusClockGating2,
     u32,
     RW,
@@ -48,11 +146,19 @@ const_assert_eq!(core::mem::size_of::<RegisterBlock>(), 0x02DC);
 
 #[repr(C)]
 pub struct RegisterBlock {
-    __reserved_0: [u32; 26],             // 0x0000
-    pub bcg2: BusClockGating2::Register, // 0x0068
-    pub bcg3: BusClockGating3::Register, // 0x006C
-    __reserved_1: [u32; 154],            // 0x0070
-    pub bsr4: BusSoftReset4::Register,   // 0x02D8
+    pub pll_cpu_ctrl: PllCpuXControl::Register,   // 0x0000
+    __reserved_0: [u32; 9],                       // 0x0004
+    pub pll_periph0: PllPeriph0Control::Register, // 0x0028
+    pub pll_periph1: PllPeriph1Control::Register, // 0x002C
+    __reserved_1: [u32; 9],                       // 0x0030
+    pub ahb1_apb1_cfg: Ahb1Apb1Config::Register,  // 0x0054
+    pub apb2_cfg: Apb2Config::Register,           // 0x0058
+    pub ahb2_cfg: Ahb2Config::Register,           // 0x005C
+    __reserved_2: [u32; 2],                       // 0x0060
+    pub bcg2: BusClockGating2::Register,          // 0x0068
+    pub bcg3: BusClockGating3::Register,          // 0x006C
+    __reserved_3: [u32; 154],                     // 0x0070
+    pub bsr4: BusSoftReset4::Register,            // 0x02D8
 }
 
 pub struct CCU {

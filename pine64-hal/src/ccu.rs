@@ -1,4 +1,7 @@
-use crate::pac::ccu::{BusClockGating2, BusClockGating3, BusSoftReset4, CCU};
+use crate::pac::ccu::{
+    Ahb1Apb1Config, Ahb2Config, Apb2Config, BusClockGating2, BusClockGating3, BusSoftReset4,
+    PllCpuXControl, PllPeriph0Control, CCU,
+};
 use core::convert::TryInto;
 use embedded_time::{units::Hertz, Period};
 
@@ -18,6 +21,8 @@ impl CcuExt for CCU {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Clocks {
+    pll_periph0_1x: Hertz,
+    pll_periph0_2x: Hertz,
     cpu: Hertz,
     ahb1: Hertz,
     ahb2: Hertz,
@@ -26,32 +31,120 @@ pub struct Clocks {
 }
 
 impl Clocks {
-    const OSC_FREQ: usize = 24_000_000;
+    const OSC_24M_FREQ: u32 = 24_000_000;
+    //const OSC_32K_FREQ: usize = 32_768;
+    //const OSC_I16M_FREQ: usize = 16_000_000;
+
     pub fn read() -> Self {
+        // TODO - check that the locks have stabilized
+
+        let ccu = unsafe { &mut *CCU::mut_ptr() };
+
+        // PLL output = (24MHz * N * K) / (M * P)
+        let pll_cpu_m = 1 + ccu
+            .pll_cpu_ctrl
+            .get_field(PllCpuXControl::FactorM::Read)
+            .unwrap()
+            .val();
+        let pll_cpu_k = 1 + ccu
+            .pll_cpu_ctrl
+            .get_field(PllCpuXControl::FactorK::Read)
+            .unwrap()
+            .val();
+        let pll_cpu_n = 1 + ccu
+            .pll_cpu_ctrl
+            .get_field(PllCpuXControl::FactorN::Read)
+            .unwrap()
+            .val();
+        let pll_cpu_div_p_field = ccu
+            .pll_cpu_ctrl
+            .get_field(PllCpuXControl::PllOutExtDivP::Read)
+            .unwrap();
+        let pll_cpu_div_p = if pll_cpu_div_p_field == PllCpuXControl::PllOutExtDivP::Divide1 {
+            1
+        } else if pll_cpu_div_p_field == PllCpuXControl::PllOutExtDivP::Divide2 {
+            2
+        } else if pll_cpu_div_p_field == PllCpuXControl::PllOutExtDivP::Divide4 {
+            4
+        } else {
+            8
+        };
+        let pll_cpu = (Self::OSC_24M_FREQ * pll_cpu_n * pll_cpu_k) / (pll_cpu_m * pll_cpu_div_p);
+
+        let pll_p0_k = 1 + ccu
+            .pll_periph0
+            .get_field(PllPeriph0Control::FactorK::Read)
+            .unwrap()
+            .val();
+        let pll_p0_n = 1 + ccu
+            .pll_periph0
+            .get_field(PllPeriph0Control::FactorN::Read)
+            .unwrap()
+            .val();
+
+        // PLL_PERIPH0(1X) = 24MHz * N * K/2
+        let pll_periph0_1x = Self::OSC_24M_FREQ * pll_p0_n * (pll_p0_k / 2);
+
+        // PLL_PERIPH0(2X) = 24MHz * N * K
+        let pll_periph0_2x = Self::OSC_24M_FREQ * pll_p0_n * pll_p0_k;
+
+        // AHB1
+        let ahb1_pre_div = 1 + ccu
+            .ahb1_apb1_cfg
+            .get_field(Ahb1Apb1Config::Ahb1PreDiv::Read)
+            .unwrap()
+            .val();
+        let ahb1_clk_src = ccu
+            .ahb1_apb1_cfg
+            .get_field(Ahb1Apb1Config::Ahb1ClockSrcSel::Read)
+            .unwrap();
+        let ahb1_clk = if ahb1_clk_src == Ahb1Apb1Config::Ahb1ClockSrcSel::PllPeriph01x {
+            pll_periph0_1x / ahb1_pre_div
+        } else {
+            unimplemented!()
+        };
+
+        // AHB2
+        let ahb2_clk_src = ccu
+            .ahb2_cfg
+            .get_field(Ahb2Config::ClockConfig::Read)
+            .unwrap();
+        let ahb2_clk = if ahb2_clk_src == Ahb2Config::ClockConfig::PllPeriph01xD2 {
+            pll_periph0_1x / 2
+        } else {
+            unimplemented!()
+        };
+
+        // APB1
+        let apb1_clk_ratio = ccu
+            .ahb1_apb1_cfg
+            .get_field(Ahb1Apb1Config::Apb1ClockDivRatio::Read)
+            .unwrap();
+        let apb1_clk = if apb1_clk_ratio == Ahb1Apb1Config::Apb1ClockDivRatio::Divide2 {
+            ahb1_clk / 2
+        } else {
+            unimplemented!()
+        };
+
+        // APB2
+        let apb2_clk_src = ccu
+            .apb2_cfg
+            .get_field(Apb2Config::ClockSrcSel::Read)
+            .unwrap();
+        let apb2_clk = if apb2_clk_src == Apb2Config::ClockSrcSel::Osc24M {
+            Self::OSC_24M_FREQ
+        } else {
+            unimplemented!()
+        };
+
         Clocks {
-            // TODO
-            // 272_000_000
-            //
-            // COUNTER_FREQUENCY: 24_000_000
-            // uart needs apb1
-            // double check device tree, might be apb2
-            //
-            // Clock: apb2, parent: osc24M(1), freq: 24000000
-            // Clock: apb1, parent: ahb1(0), freq: 75000000
-            // Clock: apb, parent: cpux(0), freq: 272000000
-            // Clock: ahb0, parent: ar100(0), freq: 32768
-            // awg0: AHB frequency 150000000 Hz, MDC div: 0x2
-            //
-            // Clock: ahb1, parent: pll_periph0(3), freq: 300000000
-            // Clock: ahb2, parent: pll_periph0(1), freq: 150000000
-            // Clock: cpux, parent: pll_cpux(2), freq: 816000000
-            //
-            // Clock: bus-uart0, parent: apb2(0), freq: 24000000
-            cpu: Period::new(1, 1_000_000).try_into().expect("TODO"),
-            ahb1: Period::new(1, 1_000_000).try_into().expect("TODO"),
-            ahb2: Period::new(1, 1_000_000).try_into().expect("TODO"),
-            apb1: Period::new(1, 1_000_000).try_into().expect("TODO"),
-            apb2: Period::new(1, 24_000_000).try_into().expect("TODO"),
+            pll_periph0_1x: Period::new(1, pll_periph0_1x).try_into().unwrap(),
+            pll_periph0_2x: Period::new(1, pll_periph0_2x).try_into().unwrap(),
+            cpu: Period::new(1, pll_cpu).try_into().unwrap(),
+            ahb1: Period::new(1, ahb1_clk).try_into().unwrap(),
+            ahb2: Period::new(1, ahb2_clk).try_into().unwrap(),
+            apb1: Period::new(1, apb1_clk).try_into().unwrap(),
+            apb2: Period::new(1, apb2_clk).try_into().unwrap(),
         }
     }
 
