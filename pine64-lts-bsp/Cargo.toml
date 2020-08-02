@@ -1,0 +1,10 @@
+[package]
+name = "pine64-lts-bsp"
+version = "0.1.0"
+authors = ["Jon Lamb"]
+edition = "2018"
+
+[dependencies]
+
+[dependencies.pine64-hal]
+path = "../pine64-hal"

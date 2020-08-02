@@ -44,6 +44,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "hdmi-raw-display"
+version = "0.1.0"
+dependencies = [
+ "pine64-boot",
+ "pine64-lts-bsp",
+]
+
+[[package]]
 name = "nb"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -149,6 +157,13 @@ dependencies = [
  "nb 0.1.3",
  "pine64",
  "static_assertions",
+]
+
+[[package]]
+name = "pine64-lts-bsp"
+version = "0.1.0"
+dependencies = [
+ "pine64-hal",
 ]
 
 [[package]]

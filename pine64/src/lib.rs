@@ -9,6 +9,7 @@ extern crate typenum;
 pub mod ccu;
 pub mod de;
 pub mod de_mixer;
+pub mod hdmi;
 pub mod pio;
 pub mod tcon0;
 pub mod tcon1;

@@ -1,0 +1,15 @@
+[package]
+name = "hdmi-raw-display"
+version = "0.1.0"
+authors = ["Jon Lamb"]
+edition = "2018"
+
+[dependencies]
+
+[dependencies.pine64-lts-bsp]
+path = "../../pine64-lts-bsp"
+
+[dependencies.pine64-boot]
+path = "../../pine64-boot"
+default-features = false
+features = ["panic-uart"]

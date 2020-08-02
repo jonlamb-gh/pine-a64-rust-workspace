@@ -4,5 +4,7 @@ members = [
     "pine64-boot",
     "pine64",
     "pine64-hal",
+    "pine64-lts-bsp",
     "examples/uart0",
+    "examples/hdmi-raw-display",
 ]
