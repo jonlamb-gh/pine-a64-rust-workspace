@@ -1,4 +1,7 @@
-use crate::hal::ccu::Ccu;
+use crate::hal::ccu::{Ccu, Clocks};
+use crate::hal::cortex_a::asm;
+use crate::hal::pac::ccu::{BusSoftReset1, HdmiClockConfig, PllVideo0Control, CCU};
+use crate::hal::pac::hdmi::{Control, Hpd, PllDbg0, HDMI};
 use crate::hal::pac::tcon1::TCON1;
 
 // hpd = 1
@@ -13,72 +16,117 @@ use crate::hal::pac::tcon1::TCON1;
 // HDMI reg defs in arch/arm/include/asm/arch-sunxi/display.h
 // sunxi_hdmi_reg
 
+// arch/arm/include/asm/arch-sunxi/clock_sun6i.h
+// obj-$(CONFIG_MACH_SUN50I)   += clock_sun6i.o
+
+// TODO
+// - add Ccu abstractions to get rid of unsafe &mut *CCU::mut_ptr()
+// - refactor all of the methods/functions
+// - add log! debug stuff
+
+// TODO
+
+// doesn't look like drivers/video/sunxi/sunxi_display.c is used ...
+//
+// sunxi_dw_hdmi.c: Allwinner DW HDMI bridge
+//
+// but printfs from drivers/video/sunxi/sunxi_dw_hdmi.c are showing up
+
+const HPD_DELAY: usize = 500;
+
+const HDMI_PAD_CTRL0_HDP: u32 = 0xFE80_0000;
+
+const HDMI_PAD_CTRL1: u32 = 0x00D8_C830;
+const HDMI_PAD_CTRL1_HALVE: u32 = 1 << 6;
+
+const HDMI_PLL_CTRL: u32 = 0xFA4E_F708;
+
 pub struct HdmiDisplay<'a> {
     tcon1: TCON1,
+    hdmi: HDMI,
     frame_buffer: &'a mut [u32],
 }
 
 impl<'a> HdmiDisplay<'a> {
-    pub fn new(tcon1: TCON1, frame_buffer: &'a mut [u32], ccu: &mut Ccu) -> Self {
+    pub fn new(tcon1: TCON1, hdmi: HDMI, frame_buffer: &'a mut [u32], ccu: &mut Ccu) -> Self {
         // TODO - checks/etc
 
-        HdmiDisplay {
+        let mut d = HdmiDisplay {
             tcon1,
+            hdmi,
             frame_buffer,
-        }
+        };
+
+        d.video_hw_init(ccu);
+
+        d
     }
 
-    fn video_hw_init(&mut self) {
+    fn video_hw_init(&mut self, ccu: &mut Ccu) {
         // drivers/video/sunxi/sunxi_display.c
         // video_hw_init()
 
-        // hdmi_present = (sunxi_hdmi_hpd_detect(hpd_delay) == 1)
+        let hdmi_present = hdmi_hpd_detect(HPD_DELAY, &mut self.hdmi, ccu);
         // ... if present ...
+
         // Fall back to EDID in case HPD failed
-        //
-        // Shut down when display was not found
-        // sunxi_hdmi_shutdown()
-        //
-        // sunxi_has_hdmi() -> always true for this bsp
+    }
+}
 
-        // sunxi_display.fb_size =
-        //   (mode->xres * mode->yres * 4 + 0xfff) & ~0xfff;
+// sunxi_hdmi_hpd_detect()
+fn hdmi_hpd_detect(_hpd_delay: usize, hdmi: &mut HDMI, ccu: &mut Ccu) -> bool {
+    // Set pll3 to 300MHz
+    clock_set_pll3(300_000_000, ccu);
 
-        //overscan_offset = (overscan_y * mode->xres + overscan_x) * 4;
+    let ccu = unsafe { &mut *CCU::mut_ptr() };
 
-        /* We want to keep the fb_base for simplefb page aligned, where as
-         * the sunxi dma engines will happily accept an unaligned address. */
-        // if (overscan_offset)
-        //    sunxi_display.fb_size += 0x1000;
+    // Set hdmi parent to pll3
+    ccu.hdmi_clk_cfg
+        .modify(HdmiClockConfig::ClockSel::Pll3Video0x1);
 
-        // gd->fb_base = gd->bd->bi_dram[0].start +
-        //      gd->bd->bi_dram[0].size - sunxi_display.fb_size;
-        // sunxi_engines_init();
+    // Set ahb gating to pass
+    // TODO - u-boot uses HDMI1 (offset 11)
+    // not HDMI0 (offset 10, they call it HDMI2)
+    ccu.bsr1.modify(BusSoftReset1::Hdmi1::Clear);
+    ccu.bsr1.modify(BusSoftReset1::Hdmi1::Set);
 
-        /*
-        fb_dma_addr = gd->fb_base - CONFIG_SYS_SDRAM_BASE;
-        sunxi_display.fb_addr = gd->fb_base;
-        if (overscan_offset) {
-            fb_dma_addr += 0x1000 - (overscan_offset & 0xfff);
-            sunxi_display.fb_addr += (overscan_offset + 0xfff) & ~0xfff;
-            memset((void *)gd->fb_base, 0, sunxi_display.fb_size);
-            flush_cache(gd->fb_base, sunxi_display.fb_size);
-        }
-        sunxi_mode_set(mode, fb_dma_addr);
-        */
+    // Clock on
+    ccu.hdmi_clk_cfg.modify(HdmiClockConfig::SClockGating::Set);
 
-        /*
-        graphic_device->frameAdrs = sunxi_display.fb_addr;
-        graphic_device->gdfIndex = GDF_32BIT_X888RGB;
-        graphic_device->gdfBytesPP = 4;
-        graphic_device->winSizeX = mode->xres - 2 * overscan_x;
-        graphic_device->winSizeY = mode->yres - 2 * overscan_y;
-        graphic_device->plnSizeX = mode->xres * graphic_device->gdfBytesPP;
-        */
+    hdmi.ctrl.modify(Control::Enable::Set);
+    hdmi.pad_ctrl0.write(HDMI_PAD_CTRL0_HDP);
+
+    // Enable PLLs for eventual DDC
+    hdmi.pad_ctrl1.write(HDMI_PAD_CTRL1 | HDMI_PAD_CTRL1_HALVE);
+    hdmi.pll_ctrl.write(HDMI_PLL_CTRL | (15 << 4));
+    hdmi.pll_dbg0.modify(PllDbg0::Pll::Pll3Video0);
+
+    // TODO - timeout, return false
+    while !hdmi.hpd.is_set(Hpd::Detect::Read) {
+        asm::nop();
     }
 
-    fn hdmi_hpd_detect(hpd_delay: usize) {
-        // sunxi_hdmi_hpd_detect()
-        todo!()
+    return true;
+}
+
+fn clock_set_pll3(clk: u32, _ccu: &mut Ccu) {
+    let ccu = unsafe { &mut *CCU::mut_ptr() };
+
+    // 6 MHz steps to allow higher frequency for DE2
+    let m = 4;
+
+    if clk == 0 {
+        ccu.pll_video0.modify(PllVideo0Control::Enable::Clear);
+    } else {
+        let n = clk / (Clocks::OSC_24M_FREQ / m);
+        let factor_n = n - 1;
+        let factor_m = m - 1;
+        // PLL3 rate = 24000000 * n / m
+        ccu.pll_video0.modify(
+            PllVideo0Control::Enable::Set
+                + PllVideo0Control::Mode::Integer
+                + PllVideo0Control::FactorN::Field::new(factor_n).unwrap()
+                + PllVideo0Control::PreDivM::Field::new(factor_m).unwrap(),
+        );
     }
 }

@@ -31,7 +31,7 @@ pub struct Clocks {
 }
 
 impl Clocks {
-    const OSC_24M_FREQ: u32 = 24_000_000;
+    pub const OSC_24M_FREQ: u32 = 24_000_000;
     //const OSC_32K_FREQ: usize = 32_768;
     //const OSC_I16M_FREQ: usize = 16_000_000;
 
@@ -172,8 +172,16 @@ impl Clocks {
 pub struct Ccu {
     pub bcg2: BCG2,
     pub bcg3: BCG3,
+    // bsr0: AHB1 Reset 0
+    // bsr1: AHB1 Reset 1
+    // bsr2: AHB1 Reset 2
+    // bsr3: APB1 Reset
+    // bsr4: APB2 Reset
     pub bsr4: BSR4,
 }
+
+// TODO - rename the wrappers
+// - BSR4 -> APB2
 
 pub struct BCG2 {
     _0: (),

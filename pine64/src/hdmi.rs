@@ -22,7 +22,7 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Enable WIDTH(U1) OFFSET(U31),
     ]
 }
 
@@ -40,7 +40,7 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Detect WIDTH(U1) OFFSET(U0),
     ]
 }
 
@@ -130,12 +130,33 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Halve WIDTH(U1) OFFSET(U6),
     ]
 }
 
 register! {
     PllControl,
+    u32,
+    RW,
+    Fields [
+        Bits WIDTH(U32) OFFSET(U0),
+    ]
+}
+
+register! {
+    PllDbg0,
+    u32,
+    RW,
+    Fields [
+        Pll WIDTH(U1) OFFSET(U21) [
+            Pll3Video0 = U0,
+            Pll7Video1 = U1
+        ]
+    ]
+}
+
+register! {
+    PllDbg1,
     u32,
     RW,
     Fields [
@@ -310,7 +331,8 @@ pub struct RegisterBlock {
     pub pad_ctrl0: PadControl0::Register,               // 0x200
     pub pad_ctrl1: PadControl1::Register,               // 0x204
     pub pll_ctrl: PllControl::Register,                 // 0x208
-    __reserved_4: [u32; 2],                             // 0x20C
+    pub pll_dbg0: PllDbg0::Register,                    // 0x20C
+    pub pll_dbg1: PllDbg1::Register,                    // 0x210
     pub hpd_cec: HpdCec::Register,                      // 0x214
     __reserved_5: [u32; 10],                            // 0x218
     pub vendor_info_frame: [u32; 5],                    // 0x240
