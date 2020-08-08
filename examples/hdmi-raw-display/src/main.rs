@@ -42,7 +42,7 @@ fn kernel_entry() -> ! {
 
     let display = HdmiDisplay::new(tcon1, hdmi, &mut frame_buffer, &mut ccu);
 
-    console_writeln!(serial, "Ok display...");
+    console_writeln!(serial, "Done with display setup");
 
     loop {
         bsp::hal::cortex_a::asm::nop();

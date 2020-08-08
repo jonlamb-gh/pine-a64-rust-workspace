@@ -8,6 +8,9 @@ use static_assertions::const_assert_eq;
 
 pub const PADDR: usize = 0x01EE_0000;
 
+const PHY_OFFSET: usize = 0x0001_0000;
+pub const PHY_PADDR: usize = PADDR + PHY_OFFSET;
+
 register! {
     VersionId,
     u32,
@@ -308,7 +311,114 @@ register! {
     ]
 }
 
-const_assert_eq!(core::mem::size_of::<RegisterBlock>(), 0x584);
+register! {
+    PhyPol,
+    u32,
+    RW,
+    Fields [
+        Bits WIDTH(U32) OFFSET(U0),
+    ]
+}
+
+register! {
+    PhyReadEn,
+    u32,
+    RW,
+    Fields [
+        Bits WIDTH(U32) OFFSET(U0),
+    ]
+}
+
+register! {
+    PhyUnscramble,
+    u32,
+    RW,
+    Fields [
+        Bits WIDTH(U32) OFFSET(U0),
+    ]
+}
+
+register! {
+    PhyControl,
+    u32,
+    RW,
+    Fields [
+        B0 WIDTH(U1) OFFSET(U0),
+        B1 WIDTH(U1) OFFSET(U1),
+        B2 WIDTH(U1) OFFSET(U2),
+        B3 WIDTH(U1) OFFSET(U3),
+        B456 WIDTH(U3) OFFSET(U4) [
+            Full = U7
+        ]
+        B7 WIDTH(U1) OFFSET(U7),
+        B891011 WIDTH(U4) OFFSET(U8) [
+            Full = U15
+        ]
+        B16 WIDTH(U1) OFFSET(U16),
+        B18 WIDTH(U1) OFFSET(U18),
+        B19 WIDTH(U1) OFFSET(U19),
+    ]
+}
+
+register! {
+    PhyUnk1,
+    u32,
+    RW,
+    Fields [
+        Bits WIDTH(U32) OFFSET(U0),
+    ]
+}
+
+register! {
+    PhyUnk2,
+    u32,
+    RW,
+    Fields [
+        Bits WIDTH(U32) OFFSET(U0),
+    ]
+}
+
+register! {
+    PhyPll,
+    u32,
+    RW,
+    Fields [
+        F0 WIDTH(U6) OFFSET(U0),
+        B25 WIDTH(U1) OFFSET(U25),
+        B30 WIDTH(U1) OFFSET(U30),
+        B31 WIDTH(U1) OFFSET(U31),
+    ]
+}
+
+register! {
+    PhyClock,
+    u32,
+    RW,
+    Fields [
+        Bits WIDTH(U32) OFFSET(U0),
+    ]
+}
+
+register! {
+    PhyUnk3,
+    u32,
+    RW,
+    Fields [
+        Bits WIDTH(U32) OFFSET(U0),
+    ]
+}
+
+register! {
+    PhyStatus,
+    u32,
+    RW,
+    Fields [
+        Ready WIDTH(U1) OFFSET(U7),
+        PlugIn WIDTH(U1) OFFSET(U19),
+    ]
+}
+
+const_assert_eq!(core::mem::size_of::<RegisterBlock>(), 0x0001_003C);
 
 #[repr(C)]
 pub struct RegisterBlock {
@@ -356,6 +466,19 @@ pub struct RegisterBlock {
     pub ddc_timeout: DdcTimeout::Register,              // 0x524
     __reserved_10: [u32; 22],                           // 0x528
     pub ddc_fifo_data: DdcFifoData::Register,           // 0x580
+    __reserved_11: [u32; 16031],                        // 0x584
+    pub phy_pol: PhyPol::Register,                      // 0x1_0000
+    __reserved_12: [u32; 3],                            // 0x1_0004
+    pub phy_read_en: PhyReadEn::Register,               // 0x1_0010
+    pub phy_unscramble: PhyUnscramble::Register,        // 0x1_0014
+    __reserved_13: [u32; 2],                            // 0x1_0018
+    pub phy_ctrl: PhyControl::Register,                 // 0x1_0020
+    pub phy_unk1: PhyUnk1::Register,                    // 0x1_0024
+    pub phy_unk2: PhyUnk2::Register,                    // 0x1_0028
+    pub phy_pll: PhyPll::Register,                      // 0x1_002C
+    pub phy_clk: PhyClock::Register,                    // 0x1_0030
+    pub phy_unk3: PhyUnk3::Register,                    // 0x1_0034
+    pub phy_status: PhyStatus::Register,                // 0x1_0038
 }
 
 pub struct HDMI {
