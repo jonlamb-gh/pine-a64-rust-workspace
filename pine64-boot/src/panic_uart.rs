@@ -12,7 +12,7 @@ use pine64_hal::{console_writeln, cortex_a::asm};
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    for _ in 0..100 {
+    for _ in 0..1000 {
         asm::nop();
     }
 
@@ -31,9 +31,11 @@ fn panic(info: &PanicInfo) -> ! {
     let serial = Serial::uart0(uart0, (tx, rx), 115_200.bps(), clocks, &mut ccu);
     let (mut serial, _rx) = serial.split();
 
-    console_writeln!(serial, "\n\n{}\n\n", info);
+    console_writeln!(serial, "\n\n");
+    console_writeln!(serial, "{}", info);
+    console_writeln!(serial, "\n\n");
 
-    for _ in 0..100 {
+    for _ in 0..1000 {
         asm::nop();
     }
 

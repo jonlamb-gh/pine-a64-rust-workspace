@@ -7,6 +7,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 
 [[package]]
+name = "bitfield"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46afbd2983a5d5a7bd740ccb198caf5b82f45c40c09c0eed36052d91cb92e719"
+
+[[package]]
 name = "bounded-registers"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -163,6 +169,7 @@ dependencies = [
 name = "pine64-lts-bsp"
 version = "0.1.0"
 dependencies = [
+ "bitfield",
  "pine64-hal",
 ]
 

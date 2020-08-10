@@ -347,11 +347,14 @@ register! {
         B1 WIDTH(U1) OFFSET(U1),
         B2 WIDTH(U1) OFFSET(U2),
         B3 WIDTH(U1) OFFSET(U3),
-        B456 WIDTH(U3) OFFSET(U4) [
+        F0 WIDTH(U3) OFFSET(U4) [
             Full = U7
         ]
         B7 WIDTH(U1) OFFSET(U7),
-        B891011 WIDTH(U4) OFFSET(U8) [
+        F1 WIDTH(U4) OFFSET(U8) [
+            Full = U15
+        ]
+        F2 WIDTH(U4) OFFSET(U12) [
             Full = U15
         ]
         B16 WIDTH(U1) OFFSET(U16),
@@ -418,6 +421,73 @@ register! {
     ]
 }
 
+register! {
+    // Offset 0x01FC..=0x01FF
+    Rx1fc,
+    u32,
+    RW,
+    Fields [
+        Byte0 WIDTH(U8) OFFSET(U0),
+        Byte1 WIDTH(U8) OFFSET(U8),
+        Byte2 WIDTH(U8) OFFSET(U16),
+        IhMute WIDTH(U8) OFFSET(U24) [
+            Disabled = U3
+        ]
+    ]
+}
+
+register! {
+    // Offset 0x7E04..=0x7E07
+    Rx7e04,
+    u32,
+    RW,
+    Fields [
+        I2cmOp WIDTH(U8) OFFSET(U0),
+        I2cmInt WIDTH(U8) OFFSET(U8),
+        I2cmCtlInt WIDTH(U8) OFFSET(U16),
+        I2cmDiv WIDTH(U8) OFFSET(U24),
+    ]
+}
+
+register! {
+    // Offset 0x7E08..=0x7E0B
+    Rx7e08,
+    u32,
+    RW,
+    Fields [
+        I2cmSegAddr WIDTH(U8) OFFSET(U0),
+        I2cmSoftRstz WIDTH(U8) OFFSET(U8),
+        I2cmSegPtr WIDTH(U8) OFFSET(U16),
+        I2cmSsSclHcnt1Addr WIDTH(U8) OFFSET(U24),
+    ]
+}
+
+register! {
+    // Offset 0x7E0C..=0x7E0F
+    Rx7e0c,
+    u32,
+    RW,
+    Fields [
+        I2cmSsSclHcnt0Addr WIDTH(U8) OFFSET(U0),
+        I2cmSsSclLcnt1Addr WIDTH(U8) OFFSET(U8),
+        I2cmSsSclLcnt0Addr WIDTH(U8) OFFSET(U16),
+        I2cmFsSclHcnt1Addr WIDTH(U8) OFFSET(U24),
+    ]
+}
+
+register! {
+    // Offset 0x7E10..=0x7E13
+    Rx7e10,
+    u32,
+    RW,
+    Fields [
+        I2cmFsSclHcnt0Addr WIDTH(U8) OFFSET(U0),
+        I2cmFsSclLcnt1Addr WIDTH(U8) OFFSET(U8),
+        I2cmFsSclLcnt0Addr WIDTH(U8) OFFSET(U16),
+        Byte3 WIDTH(U8) OFFSET(U24),
+    ]
+}
+
 const_assert_eq!(core::mem::size_of::<RegisterBlock>(), 0x0001_003C);
 
 #[repr(C)]
@@ -437,7 +507,8 @@ pub struct RegisterBlock {
     __reserved_2: [u32; 19],                            // 0x094
     pub qcp_packet0: QcpPacket0::Register,              // 0x0E0
     pub qcp_packet1: QcpPacket1::Register,              // 0x0E4
-    __reserved_3: [u32; 70],                            // 0x0E8
+    __reserved_3: [u32; 69],                            // 0x0E8
+    pub r1fc: Rx1fc::Register,                          // 0x1FC
     pub pad_ctrl0: PadControl0::Register,               // 0x200
     pub pad_ctrl1: PadControl1::Register,               // 0x204
     pub pll_ctrl: PllControl::Register,                 // 0x208
@@ -466,12 +537,17 @@ pub struct RegisterBlock {
     pub ddc_timeout: DdcTimeout::Register,              // 0x524
     __reserved_10: [u32; 22],                           // 0x528
     pub ddc_fifo_data: DdcFifoData::Register,           // 0x580
-    __reserved_11: [u32; 16031],                        // 0x584
+    __reserved_11: [u32; 7712],                         // 0x584
+    pub r7e04: Rx7e04::Register,                        // 0x7E04
+    pub r7e08: Rx7e08::Register,                        // 0x7E08
+    pub r7e0c: Rx7e0c::Register,                        // 0x7E0C
+    pub r7e10: Rx7e10::Register,                        // 0x7E10
+    __reserved_12: [u32; 8315],                         // 0x7E14
     pub phy_pol: PhyPol::Register,                      // 0x1_0000
-    __reserved_12: [u32; 3],                            // 0x1_0004
+    __reserved_13: [u32; 3],                            // 0x1_0004
     pub phy_read_en: PhyReadEn::Register,               // 0x1_0010
     pub phy_unscramble: PhyUnscramble::Register,        // 0x1_0014
-    __reserved_13: [u32; 2],                            // 0x1_0018
+    __reserved_14: [u32; 2],                            // 0x1_0018
     pub phy_ctrl: PhyControl::Register,                 // 0x1_0020
     pub phy_unk1: PhyUnk1::Register,                    // 0x1_0024
     pub phy_unk2: PhyUnk2::Register,                    // 0x1_0028

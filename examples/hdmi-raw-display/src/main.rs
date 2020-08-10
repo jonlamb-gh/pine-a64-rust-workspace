@@ -3,7 +3,7 @@
 
 extern crate pine64_lts_bsp as bsp;
 
-use bsp::display::HdmiDisplay;
+use bsp::display::*;
 use bsp::hal::ccu::Clocks;
 use bsp::hal::console_writeln;
 use bsp::hal::pac::uart0::UART0;
@@ -35,12 +35,14 @@ fn kernel_entry() -> ! {
     let hdmi = unsafe { HDMI::from_paddr() };
     let tcon1 = unsafe { TCON1::from_paddr() };
 
+    let edid_block = [0_u8; HDMI_EDID_BLOCK_SIZE];
+
     // TODO
     let mut frame_buffer = [0, 0, 0, 0];
 
     console_writeln!(serial, "Creating the display");
 
-    let display = HdmiDisplay::new(tcon1, hdmi, &mut frame_buffer, &mut ccu);
+    let display = HdmiDisplay::new(tcon1, hdmi, edid_block, &mut frame_buffer, &mut ccu);
 
     console_writeln!(serial, "Done with display setup");
 

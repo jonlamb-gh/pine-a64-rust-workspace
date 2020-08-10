@@ -5,6 +5,11 @@ use crate::hal::pac::ccu::{
 };
 use crate::hal::pac::hdmi::{Control, Hpd, PhyControl, PhyPll, PhyStatus, PllDbg0, HDMI};
 use crate::hal::pac::tcon1::TCON1;
+use bitfield::bitfield;
+
+mod dw_hdmi;
+
+pub use dw_hdmi::HDMI_EDID_BLOCK_SIZE;
 
 // HDMI reg defs in arch/arm/include/asm/arch-sunxi/display.h
 // sunxi_hdmi_reg
@@ -49,24 +54,91 @@ use crate::hal::pac::tcon1::TCON1;
 //const HDMI_PAD_CTRL1_HALVE: u32 = 1 << 6;
 //const HDMI_PLL_CTRL: u32 = 0xFA4E_F708;
 
+bitfield! {
+    #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+    pub struct DisplayFlags(u16);
+    u16;
+    pub hsync_low, set_hsync_low : 0;
+    pub hsync_high, set_hsync_high : 1;
+    pub vsync_low, set_vsync_low : 2;
+    pub vsync_high, set_vsync_high : 3;
+
+    // Data enable
+    pub de_low, set_de_low : 4;
+    pub de_high, set_de_high : 5;
+
+    // Drive data on positive edge
+    pub pixdata_posedge, set_pixdata_posedge : 6;
+    // Drive data on negative edge
+    pub pixdata_negedge, set_pixdata_negedge : 7;
+
+    pub interlaced, set_interlaced : 8;
+    pub double_scane, set_double_scan : 9;
+    pub double_clock, set_double_clock : 10;
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct TimingEntry {
+    pub min: u32,
+    pub typ: u32,
+    pub max: u32,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct DisplayTiming {
+    pub pixel_clock: TimingEntry,
+
+    pub hactive: TimingEntry,
+    pub hfront_porch: TimingEntry,
+    pub hback_porch: TimingEntry,
+    pub hsync_len: TimingEntry,
+
+    pub vactive: TimingEntry,
+    pub vfront_porch: TimingEntry,
+    pub vback_porch: TimingEntry,
+    pub vsync_len: TimingEntry,
+
+    pub flags: DisplayFlags,
+    pub hdmi_monitor: bool,
+}
+
 pub struct HdmiDisplay<'a> {
     tcon1: TCON1,
     hdmi: HDMI,
+    //timing: DisplayTiming,
+    edid_block: [u8; HDMI_EDID_BLOCK_SIZE],
     frame_buffer: &'a mut [u32],
 }
 
 impl<'a> HdmiDisplay<'a> {
-    pub fn new(tcon1: TCON1, hdmi: HDMI, frame_buffer: &'a mut [u32], ccu: &mut Ccu) -> Self {
+    pub fn new(
+        tcon1: TCON1,
+        hdmi: HDMI,
+        edid_block: [u8; HDMI_EDID_BLOCK_SIZE],
+        frame_buffer: &'a mut [u32],
+        ccu: &mut Ccu,
+    ) -> Self {
         // TODO - checks/etc
+
+        // B1, B3: HSYNC_HIGH, VSYNC_HIGH
+        let flags = DisplayFlags(0xA);
+
+        //let timing = DisplayTiming {
+        //    hdmi_monitor: true,
+        //};
 
         let mut d = HdmiDisplay {
             tcon1,
             hdmi,
+            //timing,
+            edid_block,
             frame_buffer,
         };
 
         // sunxi_dw_hdmi_probe()
         d.probe(ccu);
+
+        d.dw_hdmi_read_edid();
 
         d
     }
@@ -100,7 +172,7 @@ impl<'a> HdmiDisplay<'a> {
         // TODO - error handle, can't get hpd signal
         self.wait_for_hpd().expect("TODO - Errors");
 
-        // dw_hdmi_init(&priv->hdmi)
+        self.dw_hdmi_init();
     }
 
     // sunxi_dw_hdmi_wait_for_hpd()
@@ -130,7 +202,7 @@ impl<'a> HdmiDisplay<'a> {
         self.hdmi.phy_ctrl.modify(PhyControl::B19::Set);
         delay_us(100);
         self.hdmi.phy_ctrl.modify(PhyControl::B18::Set);
-        self.hdmi.phy_ctrl.modify(PhyControl::B456::Full);
+        self.hdmi.phy_ctrl.modify(PhyControl::F0::Full);
 
         // Note that Allwinner code doesn't fail in case of timeout
         // PHY_STATUS_TIMEOUT_US = 2000
@@ -138,7 +210,7 @@ impl<'a> HdmiDisplay<'a> {
             asm::nop();
         }
 
-        self.hdmi.phy_ctrl.modify(PhyControl::B891011::Full);
+        self.hdmi.phy_ctrl.modify(PhyControl::F1::Full);
         self.hdmi.phy_ctrl.modify(PhyControl::B7::Set);
 
         self.hdmi.phy_pll.write(0x39dc5040);
@@ -255,21 +327,34 @@ impl<'a> HdmiDisplay<'a> {
         }
     }
 
+    // struct display_timing *edid
     // sunxi_dw_hdmi_enable()
-    fn hdmi_enable(&mut self) {
+    fn hdmi_enable(&mut self, panel_bpp: u32) {
+        self.dw_hdmi_enable();
+
+        // mux = 1, hdmi
+        // sunxi_dw_hdmi_lcdc_init(mux, edid, panel_bpp);
+
+        // edid.flags = 10
+        // doesn't have h/v sync low bits...
+
+        self.hdmi.phy_ctrl.modify(PhyControl::F2::Full);
+
+        // This is last hdmi access before boot, so scramble addresses
+        // again or othwerwise BSP driver won't work. Dummy read is
+        // needed or otherwise last write doesn't get written correctly.
+        let _ = self.hdmi.version.read();
+        self.hdmi.phy_unscramble.write(0);
+    }
+
+    // sunxi_dw_hdmi_lcdc_init
+    fn dw_hdmi_lcdc_init(&mut self) {
         todo!();
     }
 
-    // dw_hdmi_enable()
-    fn dw_hdmi_enable(&mut self) {
-        todo!();
-    }
-
+    // read_edid()
     // sunxi_dw_hdmi_read_edid()
     // just calls into dw_hdmi_read_edid()
-    fn dw_hdmi_read_edid(&mut self) {
-        todo!();
-    }
 }
 
 // TODO clock_set_pll3_factors() does a write, this does modify
