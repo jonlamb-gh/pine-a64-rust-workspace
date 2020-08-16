@@ -44,21 +44,19 @@ fn kernel_entry() -> ! {
     const WIDTH: usize = 1920;
     const HEIGHT: usize = 1080;
     const BPP: usize = 4;
-    //const BUFFER_SIZE: usize = WIDTH * HEIGHT * BPP;
-    const BUFFER_SIZE: usize = 0x01FF_0000;
+    const BUFFER_SIZE: usize = WIDTH * HEIGHT * BPP;
+
+    // TODO - does the fb need to be aligned to this?
+    // doesn't appear to need it
+    //
+    //const ALIGN: usize = 0x10_0000;
+    //const BUFFER_SIZE: usize = 0x01FF_0000;
+
     const BUFFER_SIZE_U32: usize = BUFFER_SIZE / 4;
     let frame_buffer_mem = unsafe {
         static mut FRAME_BUFFER_MEM: [u32; BUFFER_SIZE_U32] = [0; BUFFER_SIZE_U32];
         &mut FRAME_BUFFER_MEM[..]
     };
-
-    //BUFFER_SIZE 8294400 == 0x7E_9000
-    //BUFFER_SIZE_U32 2073600 == 0x1F_A400
-    //addr 0x4200_88F0
-    //
-    // 0x100000 align
-    // video_reserve: Reserving 1ff_0000 bytes at be00_0000 for video device
-    // 'sunxi_de2' Video frame buffers from be000000 to bfff0000
 
     console_writeln!(serial, "BUFFER_SIZE {} == 0x{:X}", BUFFER_SIZE, BUFFER_SIZE);
     console_writeln!(
@@ -71,8 +69,7 @@ fn kernel_entry() -> ! {
 
     console_writeln!(serial, "Creating the display");
 
-    let display = HdmiDisplay::new(
-        serial,
+    let mut display = HdmiDisplay::new(
         tcon1,
         mixer1,
         de,
@@ -82,10 +79,40 @@ fn kernel_entry() -> ! {
         &mut ccu,
     );
 
-    //console_writeln!(serial, "Done with display setup");
+    // console_writeln!(&mut serial, "Timing: {:#?}", display.timing());
+
+    console_writeln!(serial, "Slowly drawing pixels");
+
+    const RED: u32 = 0xFF_FF_00_00;
+    const GREEN: u32 = 0xFF_00_FF_00;
+    const BLUE: u32 = 0xFF_00_00_FF;
 
     loop {
-        bsp::hal::cortex_a::asm::nop();
+        console_writeln!(serial, "Red");
+        for pixel in display.frame_buffer_mut().iter_mut() {
+            *pixel = RED;
+            delay_us(100);
+        }
+
+        console_writeln!(serial, "Green");
+        for pixel in display.frame_buffer_mut().iter_mut() {
+            *pixel = GREEN;
+            delay_us(100);
+        }
+
+        console_writeln!(serial, "Blue");
+        for pixel in display.frame_buffer_mut().iter_mut() {
+            *pixel = BLUE;
+            delay_us(100);
+        }
+    }
+}
+
+fn delay_us(us: usize) {
+    for _ in 0..us {
+        for _ in 0..(24 + 10) {
+            bsp::hal::cortex_a::asm::nop();
+        }
     }
 }
 

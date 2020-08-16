@@ -1,6 +1,5 @@
 use crate::display::HdmiDisplay;
 use crate::hal::ccu::Ccu;
-use crate::hal::console_writeln;
 use crate::hal::pac::ccu::{BusClockGating1, BusSoftReset1, Tcon1ClockConfig, CCU};
 use crate::hal::pac::hdmi;
 
@@ -181,10 +180,9 @@ fn div_round_up(n: u32, d: u32) -> u32 {
     (n + d - 1) / d
 }
 
-impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
+impl<'a> HdmiDisplay<'a> {
     pub(crate) fn dw_hdmi_init(&mut self) {
         use HdmiReg::*;
-        console_writeln!(&mut self.serial, "dw_hdmi_init");
 
         // Disable IH mute interrupts
         self.hdmi_write(IhMute, 0x3);
@@ -196,10 +194,7 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         self.hdmi_write(I2cmCtlInt, !0x44);
     }
 
-    // dw_hdmi_enable()
     pub(crate) fn dw_hdmi_enable(&mut self, ccu: &mut Ccu) {
-        console_writeln!(&mut self.serial, "dw_hdmi_enable");
-
         self.dw_hdmi_av_composer();
 
         self.phy_cfg(self.timing.pixel_clock.typ, ccu);
@@ -215,10 +210,7 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         self.dw_hdmi_clear_overflow();
     }
 
-    // sunxi_dw_hdmi_lcdc_init()
     pub(crate) fn dw_hdmi_lcdc_init(&mut self, bpp: u32, hal_provided_ccu: &mut Ccu) {
-        console_writeln!(&mut self.serial, "dw_hdmi_lcdc_init");
-
         // Assumes mux=1, HDMI
         let div = div_round_up(
             super::clock_get_pll3(hal_provided_ccu),
@@ -226,6 +218,7 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         );
         let mux = 1;
 
+        // TODO
         let ccu = unsafe { &mut *CCU::mut_ptr() };
 
         if mux == 0 {
@@ -248,11 +241,8 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         self.lcdc_enable(bpp);
     }
 
-    // hdmi_av_composer
     fn dw_hdmi_av_composer(&mut self) {
         use HdmiReg::*;
-
-        console_writeln!(&mut self.serial, "hdmi_av_composer");
 
         let hbl =
             self.timing.hback_porch.typ + self.timing.hfront_porch.typ + self.timing.hsync_len.typ;
@@ -326,8 +316,6 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
     fn dw_hdmi_enable_video_path(&mut self) {
         use HdmiReg::*;
 
-        console_writeln!(&mut self.serial, "dw_hdmi_enable_video_path");
-
         // Control period minimum duration
         self.hdmi_write(FcCtrlDur, 12);
         self.hdmi_write(FcExCtrlDur, 32);
@@ -356,11 +344,8 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         self.hdmi_write(McFlowCtrl, MC_FLOWCTRL_FEED_THROUGH_OFF_CSC_BYPASS);
     }
 
-    // hdmi_video_packetize()
     fn dw_hdmi_video_packetize(&mut self) {
         use HdmiReg::*;
-
-        console_writeln!(&mut self.serial, "hdmi_video_packetize");
 
         let color_depth = 0;
         let remap_size = VP_REMAP_YCC422_16BIT;
@@ -410,16 +395,12 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         self.hdmi_mod(VpConf, VP_CONF_OUTPUT_SELECTOR_MASK, output_select);
     }
 
-    // hdmi_video_csc
     fn dw_hdmi_video_csc(&mut self) {
         // TODO - my setup bails out early, need to put this logic back together
-        console_writeln!(&mut self.serial, "hdmi_video_csc");
     }
 
-    // hdmi_video_sample
     fn dw_hdmi_video_sample(&mut self) {
         use HdmiReg::*;
-        console_writeln!(&mut self.serial, "hdmi_video_sample");
 
         // TODO - handle all of the MEDIA_BUS_FMT_* variants
         // switch on hdmi->hdmi_data.enc_in_bus_format
@@ -442,12 +423,9 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         self.hdmi_write(TxBcbData1, 0);
     }
 
-    // hdmi_clear_overflow
-    //
-    // workaround to clear the overflow condition
+    // Workaround to clear the overflow condition
     fn dw_hdmi_clear_overflow(&mut self) {
         use HdmiReg::*;
-        console_writeln!(&mut self.serial, "hdmi_clear_overflow");
 
         // TMDS software reset
         self.hdmi_write(McSwRstz, !MC_SWRSTZ_TMDSSWRST_REQ);
@@ -459,22 +437,17 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         }
     }
 
-    // sunxi_dw_hdmi_read_edid()
-    // just calls into dw_hdmi_read_edid()
     pub(crate) fn dw_hdmi_read_edid(&mut self) {
         self.hdmi_read_edid(BLOCK_0);
 
         if self.edid_block[0x7E] != 0 {
-            todo!("read next EDID block")
+            todo!("read EDID ext block")
         }
     }
 
     // TODO - timeout
-    // hdmi_read_edid()
     fn hdmi_read_edid(&mut self, block: usize) {
         use HdmiReg::*;
-
-        console_writeln!(&mut self.serial, "hdmi_read_edid");
 
         // Set ddc i2c clk which devided from ddc_clk to 100khz
         self.hdmi_write(SsSclHCnt0, I2C_CLK_HIGH);
@@ -512,34 +485,16 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
 
     fn hdmi_write(&mut self, reg: HdmiReg, val: u8) {
         let addr = hdmi::PADDR + reg.offset();
-        //console_writeln!(
-        //    &mut self.serial,
-        //    "hdmi_write addr 0x{:X} val 0x{:X}",
-        //    addr,
-        //    val
-        //);
         unsafe { core::ptr::write_volatile(addr as *mut u8, val) };
     }
 
     fn hdmi_read(&mut self, reg: HdmiReg) -> u8 {
         let addr = hdmi::PADDR + reg.offset();
         let val = unsafe { core::ptr::read_volatile(addr as *const u8) };
-        //console_writeln!(
-        //    &mut self.serial,
-        //    "hdmi_read addr 0x{:X} val 0x{:X}",
-        //    addr,
-        //    val
-        //);
         val
     }
 
     fn hdmi_mod(&mut self, reg: HdmiReg, mask: u8, data: u8) {
-        //console_writeln!(
-        //    &mut self.serial,
-        //    "hdmi_mod mask 0x{:X} val 0x{:X}",
-        //    mask,
-        //    data
-        //);
         let val = self.hdmi_read(reg) & !mask;
         self.hdmi_write(reg, val | (data & mask));
     }

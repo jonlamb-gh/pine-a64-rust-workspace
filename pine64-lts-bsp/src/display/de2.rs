@@ -1,6 +1,5 @@
 use crate::display::HdmiDisplay;
 use crate::hal::ccu::{Ccu, Clocks};
-use crate::hal::console_writeln;
 use crate::hal::cortex_a::asm;
 use crate::hal::pac::ccu::{BusClockGating1, BusSoftReset1, DeClockConfig, PllDeControl, CCU};
 use crate::hal::pac::de::{BusConfig, GateConfig, ResetConfig, SelConfig};
@@ -10,19 +9,13 @@ use crate::hal::pac::de_mixer::ui::{Attr, OvlSize, Size};
 use crate::hal::pac::de_mixer::{NUM_CHANNELS, NUM_CHANNEL_CONFIGS, NUM_UI_CHANNELS};
 use crate::hal::pac::sysc::SYSC;
 
-impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
-    // sunxi_de2_composer_init
+impl<'a> HdmiDisplay<'a> {
     pub(crate) fn de2_composer_init(&mut self, ccu: &mut Ccu) {
-        console_writeln!(&mut self.serial, "de2_composer_init");
-
         // Set SRAM for video use
         let sysc = unsafe { &mut *SYSC::mut_ptr() };
         let val = sysc.sram_ctrl.read();
         let val = val & !(0x01 << 24);
         sysc.sram_ctrl.write(val);
-
-        let val = sysc.sram_ctrl.read();
-        console_writeln!(&mut self.serial, "sysc.sram_ctrl = 0x{:X}", val);
 
         clock_set_pll10(432_000_000, ccu);
 
@@ -40,14 +33,9 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         ccu.de_clk_cfg.modify(DeClockConfig::SClockGating::Set);
     }
 
-    // sunxi_de2_mode_set
     pub(crate) fn de2_mode_set(&mut self, bpp: u32) {
-        console_writeln!(&mut self.serial, "de2_mode_set");
-
         // TODO -check this addr and the reg it goes into
         let fb_addr = self.frame_buffer.as_ptr() as usize;
-        console_writeln!(&mut self.serial, "    fb_addr 0x{:X}", fb_addr);
-
         assert!(fb_addr <= core::u32::MAX as usize);
         let fb_addr: u32 = fb_addr as u32;
 
@@ -119,19 +107,6 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         }
         self.mixer.bld.out_ctl.write(0);
 
-        console_writeln!(&mut self.serial, "**** de2_mode_set HERE");
-
-        console_writeln!(
-            &mut self.serial,
-            "&self.mixer.bld.fcolor_ctl = 0x{:X}",
-            &self.mixer.bld.fcolor_ctl as *const _ as usize
-        );
-        console_writeln!(
-            &mut self.serial,
-            "&self.mixer.bld.out_ctl = 0x{:X}",
-            &self.mixer.bld.out_ctl as *const _ as usize
-        );
-
         self.mixer.bld.fcolor_ctl.write(0x00000101);
         self.mixer.bld.route.write(1);
         self.mixer.bld.premultiply.write(0);
@@ -170,9 +145,6 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
         // Assume not composite, disable CSC
         self.mixer.csc.ctl.write(0);
 
-        // UI[0] at 0x0120_3000
-        //panic!("UI[0] at 0x{:X}", &self.mixer.ui[0] as *const _ as usize);
-
         // TODO - handle other formats
         // 32 => SUNXI_DE2_FORMAT_XRGB_8888
         assert_eq!(bpp, 32);
@@ -201,6 +173,7 @@ impl<'a, TX: core::fmt::Write> HdmiDisplay<'a, TX> {
 }
 
 fn clock_set_pll10(clk: u32, _ccu: &mut Ccu) {
+    // TODO
     let ccu = unsafe { &mut *CCU::mut_ptr() };
 
     // 12 MHz steps
