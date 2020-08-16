@@ -7,6 +7,7 @@ pub use cortex_a;
 pub use pine64 as pac;
 
 pub mod ccu;
+pub mod dma;
 pub mod gpio;
 pub mod prelude;
 pub mod serial;

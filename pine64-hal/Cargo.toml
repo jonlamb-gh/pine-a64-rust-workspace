@@ -8,6 +8,7 @@ edition = "2018"
 static_assertions = "1.1"
 cortex-a = "3.0"
 nb = "0.1"
+bitfield = "0.13"
 embedded-time = "0.7"
 
 [dependencies.embedded-hal]

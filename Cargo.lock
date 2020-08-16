@@ -173,6 +173,7 @@ dependencies = [
 name = "pine64-hal"
 version = "0.1.0"
 dependencies = [
+ "bitfield",
  "cortex-a",
  "embedded-hal",
  "embedded-time",
