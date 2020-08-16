@@ -11,6 +11,7 @@ pub mod de;
 pub mod de_mixer;
 pub mod hdmi;
 pub mod pio;
+pub mod sysc;
 pub mod tcon0;
 pub mod tcon1;
 pub mod uart0;

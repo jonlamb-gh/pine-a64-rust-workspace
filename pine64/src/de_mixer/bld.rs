@@ -26,7 +26,8 @@ register! {
     u32,
     RW,
     Fields [
-         Bits WIDTH(U32) OFFSET(U0),
+         SizeWidth WIDTH(U16) OFFSET(U0),
+         SizeHeight WIDTH(U16) OFFSET(U16),
     ]
 }
 
@@ -71,7 +72,8 @@ register! {
     u32,
     RW,
     Fields [
-         Bits WIDTH(U32) OFFSET(U0),
+         SizeWidth WIDTH(U16) OFFSET(U0),
+         SizeHeight WIDTH(U16) OFFSET(U16),
     ]
 }
 
@@ -151,14 +153,14 @@ pub struct RegisterBlock {
     pub bkcolor: BkColor::Register,                 // 0x088
     pub output_size: OutputSize::Register,          // 0x08C
     pub mode: [Mode::Register; NUM_CHANNELS],       // 0x090
-    __reserved_1: [u32; 4],                         // 0x094
+    __reserved_1: [u32; 4],                         // 0x0A0
     pub ck_ctl: CkControl::Register,                // 0x0B0
     pub ck_cfg: CkConfig::Register,                 // 0x0B4
     __reserved_2: [u32; 2],                         // 0x0B8
     pub ck_max: [CkMax::Register; NUM_CHANNELS],    // 0x0C0
     __reserved_3: [u32; 4],                         // 0x0D0
     pub ck_min: [CkMin::Register; NUM_CHANNELS],    // 0x0E0
-    __reserved_4: [u32; 4],                         // 0x0F0
-    pub out_ctl: OutControl::Register,              // 0x100
-    __reserved_5: [u32; 959],                       // 0x104
+    __reserved_4: [u32; 3],                         // 0x0F0
+    pub out_ctl: OutControl::Register,              // 0x0FC
+    __reserved_5: [u32; 960],                       // 0x104
 }

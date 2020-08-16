@@ -1,6 +1,6 @@
 use crate::pac::ccu::{
-    Ahb1Apb1Config, Ahb2Config, Apb2Config, BusClockGating2, BusClockGating3, BusSoftReset4,
-    PllCpuXControl, PllPeriph0Control, CCU,
+    Ahb1Apb1Config, Ahb2Config, Apb2Config, BusClockGating2, BusClockGating3, BusSoftReset1,
+    BusSoftReset4, PllCpuXControl, PllPeriph0Control, CCU,
 };
 use core::convert::TryInto;
 use embedded_time::{units::Hertz, Period};
@@ -14,6 +14,7 @@ impl CcuExt for CCU {
         Ccu {
             bcg2: BCG2 { _0: () },
             bcg3: BCG3 { _0: () },
+            bsr1: BSR1 { _0: () },
             bsr4: BSR4 { _0: () },
         }
     }
@@ -177,6 +178,7 @@ pub struct Ccu {
     // bsr2: AHB1 Reset 2
     // bsr3: APB1 Reset
     // bsr4: APB2 Reset
+    pub bsr1: BSR1,
     pub bsr4: BSR4,
 }
 
@@ -200,6 +202,16 @@ pub struct BCG3 {
 impl BCG3 {
     pub(crate) fn enr(&mut self) -> &mut BusClockGating3::Register {
         unsafe { &mut (*CCU::mut_ptr()).bcg3 }
+    }
+}
+
+pub struct BSR1 {
+    _0: (),
+}
+
+impl BSR1 {
+    pub(crate) fn rstr(&mut self) -> &mut BusSoftReset1::Register {
+        unsafe { &mut (*CCU::mut_ptr()).bsr1 }
     }
 }
 

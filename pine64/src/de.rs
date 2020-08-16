@@ -13,7 +13,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0)
+        Mux0 WIDTH(U1) OFFSET(U0),
+        Mux1 WIDTH(U1) OFFSET(U1),
     ]
 }
 
@@ -22,7 +23,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0)
+        Mux0 WIDTH(U1) OFFSET(U0),
+        Mux1 WIDTH(U1) OFFSET(U1),
     ]
 }
 
@@ -31,7 +33,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0)
+        Mux0 WIDTH(U1) OFFSET(U0),
+        Mux1 WIDTH(U1) OFFSET(U1),
     ]
 }
 
@@ -49,7 +52,7 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0)
+        Bit0 WIDTH(U1) OFFSET(U0)
     ]
 }
 

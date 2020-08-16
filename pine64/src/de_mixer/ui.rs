@@ -23,7 +23,8 @@ register! {
     u32,
     RW,
     Fields [
-         Bits WIDTH(U32) OFFSET(U0),
+         SizeWidth WIDTH(U16) OFFSET(U0),
+         SizeHeight WIDTH(U16) OFFSET(U16),
     ]
 }
 
@@ -95,7 +96,8 @@ register! {
     u32,
     RW,
     Fields [
-         Bits WIDTH(U32) OFFSET(U0),
+         SizeWidth WIDTH(U16) OFFSET(U0),
+         SizeHeight WIDTH(U16) OFFSET(U16),
     ]
 }
 

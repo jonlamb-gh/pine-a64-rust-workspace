@@ -30,7 +30,7 @@ pub enum Error {
 /// Alias to `write!` that drops the result
 #[macro_export]
 macro_rules! console_write {
-    ($dst:expr, $($arg:tt)*) => (writeln!($dst, $($arg)*).ok())
+    ($dst:expr, $($arg:tt)*) => (write!($dst, $($arg)*).ok())
 }
 
 /// Alias to `writeln!` that drops the result

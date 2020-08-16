@@ -65,6 +65,24 @@ register! {
 }
 
 register! {
+    PllDeControl,
+    u32,
+    RW,
+    Fields [
+        PreDivM WIDTH(U4) OFFSET(U0),
+        FactorN WIDTH(U7) OFFSET(U8),
+        PllSdmEn WIDTH(U1) OFFSET(U20),
+        Mode WIDTH(U1) OFFSET(U24) [
+            Fractional = U0,
+            Integer = U1
+        ]
+        FracClockOut WIDTH(U1) OFFSET(U25),
+        Lock WIDTH(U1) OFFSET(U28),
+        Enable WIDTH(U1) OFFSET(U31)
+    ]
+}
+
+register! {
     Ahb1Apb1Config,
     u32,
     RO,
@@ -128,7 +146,10 @@ register! {
     u32,
     RW,
     Fields [
+        Tcon0 WIDTH(U1) OFFSET(U3),
+        Tcon1 WIDTH(U1) OFFSET(U4),
         Hdmi WIDTH(U1) OFFSET(U11),
+        De WIDTH(U1) OFFSET(U12),
     ]
 }
 
@@ -153,6 +174,30 @@ register! {
         Uart2 WIDTH(U1) OFFSET(U18),
         Uart3 WIDTH(U1) OFFSET(U19),
         Uart4 WIDTH(U1) OFFSET(U20)
+    ]
+}
+
+register! {
+    DeClockConfig,
+    u32,
+    RW,
+    Fields [
+        DivRatioM WIDTH(U4) OFFSET(U0),
+        ClockSel WIDTH(U3) OFFSET(U24) [
+            PllPeriph0x2 = U0,
+            PllDe = U1
+        ]
+        SClockGating WIDTH(U1) OFFSET(U31)
+    ]
+}
+
+register! {
+    Tcon1ClockConfig,
+    u32,
+    RW,
+    Fields [
+        DivRatioM WIDTH(U4) OFFSET(U0),
+        SClockGating WIDTH(U1) OFFSET(U31)
     ]
 }
 
@@ -195,8 +240,11 @@ register! {
     u32,
     RW,
     Fields [
+        Tcon0 WIDTH(U1) OFFSET(U3),
+        Tcon1 WIDTH(U1) OFFSET(U4),
         Hdmi0 WIDTH(U1) OFFSET(U10),
         Hdmi1 WIDTH(U1) OFFSET(U11),
+        De WIDTH(U1) OFFSET(U12),
     ]
 }
 
@@ -242,24 +290,30 @@ pub struct RegisterBlock {
     __reserved_1: [u32; 5],                         // 0x0014
     pub pll_periph0: PllPeriph0Control::Register,   // 0x0028
     pub pll_periph1: PllPeriph1Control::Register,   // 0x002C
-    __reserved_2: [u32; 9],                         // 0x0030
+    __reserved_2: [u32; 6],                         // 0x0030
+    pub pll_de: PllDeControl::Register,             // 0x0048
+    __reserved_3: [u32; 2],                         // 0x004C
     pub ahb1_apb1_cfg: Ahb1Apb1Config::Register,    // 0x0054
     pub apb2_cfg: Apb2Config::Register,             // 0x0058
     pub ahb2_cfg: Ahb2Config::Register,             // 0x005C
-    __reserved_3: u32,                              // 0x0060
+    __reserved_4: u32,                              // 0x0060
     pub bcg1: BusClockGating1::Register,            // 0x0064
     pub bcg2: BusClockGating2::Register,            // 0x0068
     pub bcg3: BusClockGating3::Register,            // 0x006C
-    __reserved_4: [u32; 56],                        // 0x0070
+    __reserved_5: [u32; 37],                        // 0x0070
+    pub de_clk_cfg: DeClockConfig::Register,        // 0x0104
+    __reserved_6: [u32; 5],                         // 0x0108
+    pub tcon1_clk_cfg: Tcon1ClockConfig::Register,  // 0x011C
+    __reserved_7: [u32; 12],                        // 0x0120
     pub hdmi_clk_cfg: HdmiClockConfig::Register,    // 0x0150
     pub hdmi_slow_clk_cfg: HdmiSlowClock::Register, // 0x0154
-    __reserved_5: [u32; 90],                        // 0x0158
+    __reserved_8: [u32; 90],                        // 0x0158
     pub bsr0: BusSoftReset0::Register,              // 0x02C0
     pub bsr1: BusSoftReset1::Register,              // 0x02C4
     pub bsr2: BusSoftReset2::Register,              // 0x02C8
-    __reserved_6: u32,                              // 0x02CC
+    __reserved_9: u32,                              // 0x02CC
     pub bsr3: BusSoftReset3::Register,              // 0x02D0
-    __reserved_7: u32,                              // 0x02D4
+    __reserved_10: u32,                             // 0x02D4
     pub bsr4: BusSoftReset4::Register,              // 0x02D8
 }
 

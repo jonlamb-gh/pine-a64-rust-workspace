@@ -13,6 +13,10 @@ register! {
     u32,
     RW,
     Fields [
+        IoMapSel WIDTH(U1) OFFSET(U0) [
+            Tcon0 = U0,
+            Tcon1 = U1
+        ]
         GammaEnable WIDTH(U1) OFFSET(U30),
         Enable WIDTH(U1) OFFSET(U31)
     ]
@@ -41,7 +45,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        StartDelay WIDTH(U5) OFFSET(U4),
+        Enable WIDTH(U1) OFFSET(U31),
     ]
 }
 
@@ -50,7 +55,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Y WIDTH(U12) OFFSET(U0),
+        X WIDTH(U12) OFFSET(U16),
     ]
 }
 
@@ -59,7 +65,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Y WIDTH(U12) OFFSET(U0),
+        X WIDTH(U12) OFFSET(U16),
     ]
 }
 
@@ -68,7 +75,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Y WIDTH(U12) OFFSET(U0),
+        X WIDTH(U12) OFFSET(U16),
     ]
 }
 
@@ -77,7 +85,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Hbp WIDTH(U12) OFFSET(U0),
+        Ht WIDTH(U12) OFFSET(U16),
     ]
 }
 
@@ -86,7 +95,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Vbp WIDTH(U12) OFFSET(U0),
+        Vt WIDTH(U12) OFFSET(U16),
     ]
 }
 
@@ -95,7 +105,8 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Vspw WIDTH(U10) OFFSET(U0),
+        Hspw WIDTH(U10) OFFSET(U16),
     ]
 }
 
@@ -117,24 +128,39 @@ register! {
     ]
 }
 
+register! {
+    DataClock,
+    u32,
+    RW,
+    Fields [
+        Divider WIDTH(U7) OFFSET(U0),
+        Enable WIDTH(U4) OFFSET(U28) [
+            Disabled = U0
+        ]
+    ]
+}
+
 const_assert_eq!(core::mem::size_of::<RegisterBlock>(), 0x0F8);
 
 #[repr(C)]
 pub struct RegisterBlock {
-    pub gctrl: GlobalControl::Register,    // 0x000
-    pub gint0: GlobalInt0::Register,       // 0x004
-    pub gint1: GlobalInt1::Register,       // 0x008
-    __reserved_0: [u32; 33],               // 0x00C
-    pub ctrl: Control::Register,           // 0x090
-    pub timing_src: Timing0::Register,     // 0x094
-    pub timing_scale: Timing1::Register,   // 0x098
-    pub timing_out: Timing2::Register,     // 0x09C
-    pub timing_h: Timing3::Register,       // 0x0A0
-    pub timing_v: Timing4::Register,       // 0x0A4
-    pub timing_sync: Timing5::Register,    // 0x0A8
-    __reserved_1: [u32; 17],               // 0x0AC
-    pub io_polarity: IoPolarity::Register, // 0x0F0
-    pub io_trigger: IoTrigger::Register,   // 0x0F4
+    pub gctrl: GlobalControl::Register,        // 0x000
+    pub gint0: GlobalInt0::Register,           // 0x004
+    pub gint1: GlobalInt1::Register,           // 0x008
+    __reserved_0: [u32; 14],                   // 0x00C
+    pub tcon0_dclk: DataClock::Register,       // 0x044
+    __reserved_1: [u32; 17],                   // 0x048
+    pub tcon0_io_trigger: IoTrigger::Register, // 0x08C
+    pub ctrl: Control::Register,               // 0x090
+    pub timing_src: Timing0::Register,         // 0x094
+    pub timing_scale: Timing1::Register,       // 0x098
+    pub timing_out: Timing2::Register,         // 0x09C
+    pub timing_h: Timing3::Register,           // 0x0A0
+    pub timing_v: Timing4::Register,           // 0x0A4
+    pub timing_sync: Timing5::Register,        // 0x0A8
+    __reserved_2: [u32; 17],                   // 0x0AC
+    pub io_polarity: IoPolarity::Register,     // 0x0F0
+    pub io_trigger: IoTrigger::Register,       // 0x0F4
 }
 
 pub struct TCON1 {
