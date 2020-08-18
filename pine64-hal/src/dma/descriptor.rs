@@ -41,8 +41,8 @@ impl Default for Descriptor {
         config.set_dst_drq_port(DrqPort::SdRam);
         config.set_src_address_mode(AddressMode::Linear);
         config.set_dst_address_mode(AddressMode::Linear);
-        config.set_src_burst_length(BurstLength::One);
-        config.set_dst_burst_length(BurstLength::One);
+        config.set_src_burst_length(BurstLength::Four);
+        config.set_dst_burst_length(BurstLength::Four);
         config.set_src_data_width(DataWidth::Bits8);
         config.set_dst_data_width(DataWidth::Bits8);
 

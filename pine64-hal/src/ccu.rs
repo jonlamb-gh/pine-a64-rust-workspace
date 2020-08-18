@@ -1,6 +1,6 @@
 use crate::pac::ccu::{
-    Ahb1Apb1Config, Ahb2Config, Apb2Config, BusClockGating2, BusClockGating3, BusSoftReset1,
-    BusSoftReset4, PllCpuXControl, PllPeriph0Control, CCU,
+    Ahb1Apb1Config, Ahb2Config, Apb2Config, BusClockGating0, BusClockGating2, BusClockGating3,
+    BusSoftReset0, BusSoftReset4, PllCpuXControl, PllPeriph0Control, CCU,
 };
 use core::convert::TryInto;
 use embedded_time::{units::Hertz, Period};
@@ -12,9 +12,10 @@ pub trait CcuExt {
 impl CcuExt for CCU {
     fn constrain(self) -> Ccu {
         Ccu {
+            bcg0: BCG0 { _0: () },
             bcg2: BCG2 { _0: () },
             bcg3: BCG3 { _0: () },
-            bsr1: BSR1 { _0: () },
+            bsr0: BSR0 { _0: () },
             bsr4: BSR4 { _0: () },
         }
     }
@@ -171,6 +172,7 @@ impl Clocks {
 }
 
 pub struct Ccu {
+    pub bcg0: BCG0,
     pub bcg2: BCG2,
     pub bcg3: BCG3,
     // bsr0: AHB1 Reset 0
@@ -178,12 +180,22 @@ pub struct Ccu {
     // bsr2: AHB1 Reset 2
     // bsr3: APB1 Reset
     // bsr4: APB2 Reset
-    pub bsr1: BSR1,
+    pub bsr0: BSR0,
     pub bsr4: BSR4,
 }
 
 // TODO - rename the wrappers
 // - BSR4 -> APB2
+
+pub struct BCG0 {
+    _0: (),
+}
+
+impl BCG0 {
+    pub(crate) fn enr(&mut self) -> &mut BusClockGating0::Register {
+        unsafe { &mut (*CCU::mut_ptr()).bcg0 }
+    }
+}
 
 pub struct BCG2 {
     _0: (),
@@ -205,13 +217,13 @@ impl BCG3 {
     }
 }
 
-pub struct BSR1 {
+pub struct BSR0 {
     _0: (),
 }
 
-impl BSR1 {
-    pub(crate) fn rstr(&mut self) -> &mut BusSoftReset1::Register {
-        unsafe { &mut (*CCU::mut_ptr()).bsr1 }
+impl BSR0 {
+    pub(crate) fn rstr(&mut self) -> &mut BusSoftReset0::Register {
+        unsafe { &mut (*CCU::mut_ptr()).bsr0 }
     }
 }
 

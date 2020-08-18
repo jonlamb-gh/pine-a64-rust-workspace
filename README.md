@@ -107,4 +107,6 @@ https://github.com/stm32-rs/stm32f1xx-hal/blob/master/src/gpio.rs
 
 https://github.com/japaric/stm32f30x-hal/blob/master/src/serial.rs
 
+https://github.com/stm32-rs/stm32f7xx-hal/blob/master/src/dma.rs
+
 https://www.freertos.org/Using-FreeRTOS-on-Cortex-A-Embedded-Processors.html

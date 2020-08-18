@@ -20,6 +20,7 @@ pub use dw_hdmi::HDMI_EDID_BLOCK_SIZE;
 // - refactor all of the methods/functions
 // - add log! debug stuff
 // - EDID parser; https://en.wikipedia.org/wiki/Extended_Display_Identification_Data
+// - move some of this into the HAL crate with a trait
 
 // drivers/video/sunxi/sunxi_dw_hdmi.c
 // sunxi_dw_hdmi.c: Allwinner DW HDMI bridge

@@ -141,6 +141,16 @@ register! {
 }
 
 register! {
+    /// AHB gating 0
+    BusClockGating0,
+    u32,
+    RW,
+    Fields [
+        Dma WIDTH(U1) OFFSET(U6),
+    ]
+}
+
+register! {
     /// AHB gating 1
     BusClockGating1,
     u32,
@@ -227,15 +237,17 @@ register! {
 }
 
 register! {
+    /// AHB1 reset 0
     BusSoftReset0,
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0),
+        Dma WIDTH(U32) OFFSET(U6),
     ]
 }
 
 register! {
+    /// AHB1 reset 1
     BusSoftReset1,
     u32,
     RW,
@@ -249,6 +261,7 @@ register! {
 }
 
 register! {
+    /// AHB1 reset 2
     BusSoftReset2,
     u32,
     RW,
@@ -258,6 +271,7 @@ register! {
 }
 
 register! {
+    /// APB1 reset
     BusSoftReset3,
     u32,
     RW,
@@ -267,6 +281,7 @@ register! {
 }
 
 register! {
+    /// APB2 reset
     BusSoftReset4,
     u32,
     RW,
@@ -296,7 +311,7 @@ pub struct RegisterBlock {
     pub ahb1_apb1_cfg: Ahb1Apb1Config::Register,    // 0x0054
     pub apb2_cfg: Apb2Config::Register,             // 0x0058
     pub ahb2_cfg: Ahb2Config::Register,             // 0x005C
-    __reserved_4: u32,                              // 0x0060
+    pub bcg0: BusClockGating0::Register,            // 0x0060
     pub bcg1: BusClockGating1::Register,            // 0x0064
     pub bcg2: BusClockGating2::Register,            // 0x0068
     pub bcg3: BusClockGating3::Register,            // 0x006C
