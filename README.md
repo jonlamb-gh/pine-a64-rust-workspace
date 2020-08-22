@@ -2,7 +2,9 @@
 
 ## Crates
 
-TODO
+* [pine64](pine64/) : pine-a64 device crate, registers defined via [bounded-registers](https://github.com/auxoncorp/bounded-registers)
+* [pine64-hal](pine64-hal/) : [embedded-hal](https://github.com/rust-embedded/embedded-hal) trait impls
+* [pine64-lts-bsp](pine64-lts-bsp/) : pine64-lts board support crate
 
 ## Building
 
