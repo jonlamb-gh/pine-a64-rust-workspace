@@ -87,6 +87,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "hdmi-raw-display-dma"
+version = "0.1.0"
+dependencies = [
+ "pine64-boot",
+ "pine64-hal",
+]
+
+[[package]]
 name = "mem2mem-dma"
 version = "0.1.0"
 dependencies = [

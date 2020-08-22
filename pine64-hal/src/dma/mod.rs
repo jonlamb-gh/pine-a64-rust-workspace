@@ -141,6 +141,10 @@ where
             dst_buffer,
         }
     }
+
+    pub fn free(self) -> (Pin<&'static mut Descriptor>, Pin<SrcBuf>, Pin<DstBuf>) {
+        (self.desc, self.src_buffer, self.dst_buffer)
+    }
 }
 
 #[derive(Debug)]
