@@ -1,19 +1,20 @@
 #![no_std]
 #![no_main]
 
-extern crate pine64_lts_bsp as bsp;
+extern crate pine64_hal as hal;
 
-use bsp::display::*;
-use bsp::hal::ccu::Clocks;
-use bsp::hal::console_writeln;
-use bsp::hal::pac::de::DE;
-use bsp::hal::pac::de_mixer::MIXER1;
-use bsp::hal::pac::uart0::UART0;
-use bsp::hal::pac::uart_common::NotConfigured;
-use bsp::hal::pac::{ccu::CCU, hdmi::HDMI, pio::PIO, tcon1::TCON1};
-use bsp::hal::prelude::*;
-use bsp::hal::serial::Serial;
 use core::fmt::Write;
+use core::pin::Pin;
+use hal::ccu::Clocks;
+use hal::console_writeln;
+use hal::display::hdmi::HdmiDisplay;
+use hal::pac::de::DE;
+use hal::pac::de_mixer::MIXER1;
+use hal::pac::uart0::UART0;
+use hal::pac::uart_common::NotConfigured;
+use hal::pac::{ccu::CCU, hdmi::HDMI, pio::PIO, tcon1::TCON1};
+use hal::prelude::*;
+use hal::serial::Serial;
 
 fn kernel_entry() -> ! {
     let clocks = Clocks::read();
@@ -39,8 +40,6 @@ fn kernel_entry() -> ! {
     let mixer1 = unsafe { MIXER1::from_paddr() };
     let de = unsafe { DE::from_paddr() };
 
-    let edid_block = [0_u8; HDMI_EDID_BLOCK_SIZE];
-
     const WIDTH: usize = 1920;
     const HEIGHT: usize = 1080;
     const BPP: usize = 4;
@@ -53,10 +52,9 @@ fn kernel_entry() -> ! {
     //const BUFFER_SIZE: usize = 0x01FF_0000;
 
     const BUFFER_SIZE_U32: usize = BUFFER_SIZE / 4;
-    let frame_buffer_mem = unsafe {
-        static mut FRAME_BUFFER_MEM: [u32; BUFFER_SIZE_U32] = [0; BUFFER_SIZE_U32];
-        &mut FRAME_BUFFER_MEM[..]
-    };
+    static mut FRAME_BUFFER_MEM: [u32; BUFFER_SIZE_U32] = [0; BUFFER_SIZE_U32];
+
+    let mut frame_buffer_mem = unsafe { Pin::new(&mut FRAME_BUFFER_MEM[..]) };
 
     console_writeln!(serial, "BUFFER_SIZE {} == 0x{:X}", BUFFER_SIZE, BUFFER_SIZE);
     console_writeln!(
@@ -69,17 +67,11 @@ fn kernel_entry() -> ! {
 
     console_writeln!(serial, "Creating the display");
 
-    let mut display = HdmiDisplay::new(
-        tcon1,
-        mixer1,
-        de,
-        hdmi,
-        edid_block,
-        frame_buffer_mem,
-        &mut ccu,
-    );
+    let display = HdmiDisplay::new(tcon1, mixer1, de, hdmi, &frame_buffer_mem, &mut ccu);
 
-    // console_writeln!(&mut serial, "Timing: {:#?}", display.timing());
+    console_writeln!(&mut serial, "EDID: {:#?}", display.edid());
+
+    console_writeln!(&mut serial, "Timing: {:#?}", display.timing());
 
     console_writeln!(serial, "Slowly drawing pixels");
 
@@ -89,19 +81,19 @@ fn kernel_entry() -> ! {
 
     loop {
         console_writeln!(serial, "Red");
-        for pixel in display.frame_buffer_mut().iter_mut() {
+        for pixel in frame_buffer_mem.iter_mut() {
             *pixel = RED;
             delay_us(100);
         }
 
         console_writeln!(serial, "Green");
-        for pixel in display.frame_buffer_mut().iter_mut() {
+        for pixel in frame_buffer_mem.iter_mut() {
             *pixel = GREEN;
             delay_us(100);
         }
 
         console_writeln!(serial, "Blue");
-        for pixel in display.frame_buffer_mut().iter_mut() {
+        for pixel in frame_buffer_mem.iter_mut() {
             *pixel = BLUE;
             delay_us(100);
         }
@@ -111,7 +103,7 @@ fn kernel_entry() -> ! {
 fn delay_us(us: usize) {
     for _ in 0..us {
         for _ in 0..(24 + 10) {
-            bsp::hal::cortex_a::asm::nop();
+            hal::cortex_a::asm::nop();
         }
     }
 }

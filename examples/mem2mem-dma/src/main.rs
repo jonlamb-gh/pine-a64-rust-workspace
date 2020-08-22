@@ -5,6 +5,7 @@ extern crate pine64_hal as hal;
 
 use crate::hal::ccu::Clocks;
 use crate::hal::console_writeln;
+use crate::hal::dma::{Descriptor, Transfer, TransferResources};
 use crate::hal::pac::ccu::CCU;
 use crate::hal::pac::dma::DMA;
 use crate::hal::pac::pio::PIO;
@@ -14,10 +15,6 @@ use crate::hal::prelude::*;
 use crate::hal::serial::Serial;
 use core::fmt::Write;
 use core::pin::Pin;
-
-// TODO
-//use crate::hal::dma::{Descriptor, Dma};
-use crate::hal::dma::*;
 
 fn kernel_entry() -> ! {
     let clocks = Clocks::read();

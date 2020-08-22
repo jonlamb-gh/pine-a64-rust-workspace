@@ -10,12 +10,12 @@ use nom::{
 };
 
 // TODO
-// - move this into an HDMI crate
 // - Error type https://github.com/Geal/nom/blob/master/examples/custom_error.rs
 // - checksum check
 // - split up the sub-byte fields using bits mod stuff bits::complete as bits
 // - do the unit conversions
 
+// https://en.wikipedia.org/wiki/Extended_Display_Identification_Data
 // http://www.drhdmi.eu/dictionary/edid.html
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]

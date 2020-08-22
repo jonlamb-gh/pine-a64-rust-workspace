@@ -1,9 +1,10 @@
 use crate::pac::ccu::{
-    Ahb1Apb1Config, Ahb2Config, Apb2Config, BusClockGating0, BusClockGating2, BusClockGating3,
-    BusSoftReset0, BusSoftReset4, PllCpuXControl, PllPeriph0Control, CCU,
+    Ahb1Apb1Config, Ahb2Config, Apb2Config, BusClockGating0, BusClockGating1, BusClockGating2,
+    BusClockGating3, BusSoftReset0, BusSoftReset1, BusSoftReset4, PllCpuXControl, PllDeControl,
+    PllPeriph0Control, PllVideo0Control, CCU,
 };
-use core::convert::TryInto;
-use embedded_time::{units::Hertz, Period};
+use cortex_a::asm;
+use embedded_time::rate::Hertz;
 
 pub trait CcuExt {
     fn constrain(self) -> Ccu;
@@ -13,15 +14,17 @@ impl CcuExt for CCU {
     fn constrain(self) -> Ccu {
         Ccu {
             bcg0: BCG0 { _0: () },
+            bcg1: BCG1 { _0: () },
             bcg2: BCG2 { _0: () },
             bcg3: BCG3 { _0: () },
             bsr0: BSR0 { _0: () },
+            bsr1: BSR1 { _0: () },
             bsr4: BSR4 { _0: () },
         }
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Clocks {
     pll_periph0_1x: Hertz,
     pll_periph0_2x: Hertz,
@@ -140,13 +143,13 @@ impl Clocks {
         };
 
         Clocks {
-            pll_periph0_1x: Period::new(1, pll_periph0_1x).try_into().unwrap(),
-            pll_periph0_2x: Period::new(1, pll_periph0_2x).try_into().unwrap(),
-            cpu: Period::new(1, pll_cpu).try_into().unwrap(),
-            ahb1: Period::new(1, ahb1_clk).try_into().unwrap(),
-            ahb2: Period::new(1, ahb2_clk).try_into().unwrap(),
-            apb1: Period::new(1, apb1_clk).try_into().unwrap(),
-            apb2: Period::new(1, apb2_clk).try_into().unwrap(),
+            pll_periph0_1x: Hertz::new(pll_periph0_1x),
+            pll_periph0_2x: Hertz::new(pll_periph0_2x),
+            cpu: Hertz::new(pll_cpu),
+            ahb1: Hertz::new(ahb1_clk),
+            ahb2: Hertz::new(ahb2_clk),
+            apb1: Hertz::new(apb1_clk),
+            apb2: Hertz::new(apb2_clk),
         }
     }
 
@@ -173,6 +176,7 @@ impl Clocks {
 
 pub struct Ccu {
     pub bcg0: BCG0,
+    pub bcg1: BCG1,
     pub bcg2: BCG2,
     pub bcg3: BCG3,
     // bsr0: AHB1 Reset 0
@@ -181,6 +185,7 @@ pub struct Ccu {
     // bsr3: APB1 Reset
     // bsr4: APB2 Reset
     pub bsr0: BSR0,
+    pub bsr1: BSR1,
     pub bsr4: BSR4,
 }
 
@@ -194,6 +199,16 @@ pub struct BCG0 {
 impl BCG0 {
     pub(crate) fn enr(&mut self) -> &mut BusClockGating0::Register {
         unsafe { &mut (*CCU::mut_ptr()).bcg0 }
+    }
+}
+
+pub struct BCG1 {
+    _0: (),
+}
+
+impl BCG1 {
+    pub(crate) fn enr(&mut self) -> &mut BusClockGating1::Register {
+        unsafe { &mut (*CCU::mut_ptr()).bcg1 }
     }
 }
 
@@ -227,6 +242,16 @@ impl BSR0 {
     }
 }
 
+pub struct BSR1 {
+    _0: (),
+}
+
+impl BSR1 {
+    pub(crate) fn rstr(&mut self) -> &mut BusSoftReset1::Register {
+        unsafe { &mut (*CCU::mut_ptr()).bsr1 }
+    }
+}
+
 pub struct BSR4 {
     _0: (),
 }
@@ -234,5 +259,98 @@ pub struct BSR4 {
 impl BSR4 {
     pub(crate) fn rstr(&mut self) -> &mut BusSoftReset4::Register {
         unsafe { &mut (*CCU::mut_ptr()).bsr4 }
+    }
+}
+
+impl Ccu {
+    pub(crate) fn pll_video0(&self) -> Hertz {
+        let ccu = unsafe { &*CCU::ptr() };
+
+        let n = 1 + ccu
+            .pll_video0
+            .get_field(PllVideo0Control::FactorN::Read)
+            .unwrap()
+            .val();
+        let m = 1 + ccu
+            .pll_video0
+            .get_field(PllVideo0Control::PreDivM::Read)
+            .unwrap()
+            .val();
+
+        let f = (24000 * n / m) * 1000;
+        Hertz::new(f)
+    }
+
+    pub(crate) fn set_pll_video0(&mut self, clk: Hertz) {
+        let ccu = unsafe { &mut *CCU::mut_ptr() };
+
+        // 6 MHz steps to allow higher frequency for DE2
+        let m = 4;
+
+        if clk.0 == 0 {
+            ccu.pll_video0.modify(PllVideo0Control::Enable::Clear);
+        } else {
+            let n = clk.0 / (Clocks::OSC_24M_FREQ / m);
+            let factor_n = n - 1;
+            let factor_m = m - 1;
+            // PLL3 rate = 24000000 * n / m
+            ccu.pll_video0.modify(
+                PllVideo0Control::Enable::Set
+                    + PllVideo0Control::Mode::Integer
+                    + PllVideo0Control::FactorN::Field::new(factor_n).unwrap()
+                    + PllVideo0Control::PreDivM::Field::new(factor_m).unwrap(),
+            );
+
+            while !ccu.pll_video0.is_set(PllVideo0Control::Lock::Read) {
+                asm::nop();
+            }
+        }
+    }
+
+    pub(crate) fn set_pll_video0_factors(&mut self, m: u32, n: u32) {
+        let ccu = unsafe { &mut *CCU::mut_ptr() };
+
+        // TODO - these are trip'n ...
+        //assert_ne!(m & !0xFF, 0);
+        //assert_ne!(n & !0xFF, 0);
+
+        // PLL3 rate = 24000000 * n / m
+        let factor_n = n - 1;
+        let factor_m = m - 1;
+        ccu.pll_video0.modify(
+            PllVideo0Control::Enable::Set
+                + PllVideo0Control::Mode::Integer
+                + PllVideo0Control::FactorN::Field::new(factor_n).unwrap()
+                + PllVideo0Control::PreDivM::Field::new(factor_m).unwrap(),
+        );
+
+        while !ccu.pll_video0.is_set(PllVideo0Control::Lock::Read) {
+            asm::nop();
+        }
+    }
+
+    pub(crate) fn set_pll_de(&mut self, clk: Hertz) {
+        let ccu = unsafe { &mut *CCU::mut_ptr() };
+
+        // 12 MHz steps
+        let m = 2;
+        if clk.0 == 0 {
+            ccu.pll_de.modify(PllDeControl::Enable::Clear);
+        } else {
+            let n = clk.0 / (Clocks::OSC_24M_FREQ / m);
+            let factor_n = n - 1;
+            let factor_m = m - 1;
+            // PLL10 rate = 24000000 * n / m
+            ccu.pll_de.modify(
+                PllDeControl::Enable::Set
+                    + PllDeControl::Mode::Integer
+                    + PllDeControl::FactorN::Field::new(factor_n).unwrap()
+                    + PllDeControl::PreDivM::Field::new(factor_m).unwrap(),
+            );
+
+            while !ccu.pll_de.is_set(PllDeControl::Lock::Read) {
+                asm::nop();
+            }
+        }
     }
 }

@@ -53,9 +53,9 @@ dependencies = [
 
 [[package]]
 name = "embedded-time"
-version = "0.7.1"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc7ecdb353be2f8d3055edcc9e316eedae1de4305030766bf8d2fd7015bee192"
+checksum = "ba60f86bc5d7631945a6982ae035b5531b8717551ff80eeb5b6c011813c6be5b"
 dependencies = [
  "num",
 ]
@@ -83,7 +83,7 @@ name = "hdmi-raw-display"
 version = "0.1.0"
 dependencies = [
  "pine64-boot",
- "pine64-lts-bsp",
+ "pine64-hal",
 ]
 
 [[package]]
@@ -216,6 +216,7 @@ dependencies = [
  "embedded-hal",
  "embedded-time",
  "nb 0.1.3",
+ "nom",
  "pine64",
  "static_assertions",
 ]
@@ -224,8 +225,6 @@ dependencies = [
 name = "pine64-lts-bsp"
 version = "0.1.0"
 dependencies = [
- "bitfield",
- "nom",
  "pine64-hal",
 ]
 

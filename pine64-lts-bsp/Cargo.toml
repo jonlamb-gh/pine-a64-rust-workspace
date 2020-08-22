@@ -5,11 +5,6 @@ authors = ["Jon Lamb"]
 edition = "2018"
 
 [dependencies]
-bitfield = "0.13"
 
 [dependencies.pine64-hal]
 path = "../pine64-hal"
-
-[dependencies.nom]
-version = "5.1"
-default-features = false

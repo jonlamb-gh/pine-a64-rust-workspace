@@ -1,44 +1,52 @@
-use crate::display::HdmiDisplay;
-use crate::hal::ccu::{Ccu, Clocks};
-use crate::hal::cortex_a::asm;
-use crate::hal::pac::ccu::{BusClockGating1, BusSoftReset1, DeClockConfig, PllDeControl, CCU};
-use crate::hal::pac::de::{BusConfig, GateConfig, ResetConfig, SelConfig};
-use crate::hal::pac::de_mixer::bld::{InSize, OutputSize};
-use crate::hal::pac::de_mixer::global::{GlobalControl, GlobalSize};
-use crate::hal::pac::de_mixer::ui::{Attr, OvlSize, Size};
-use crate::hal::pac::de_mixer::{NUM_CHANNELS, NUM_CHANNEL_CONFIGS, NUM_UI_CHANNELS};
-use crate::hal::pac::sysc::SYSC;
+//! Display engine 2.0
 
-impl<'a> HdmiDisplay<'a> {
-    pub(crate) fn de2_composer_init(&mut self, ccu: &mut Ccu) {
+// TODO - SYSC abstractions
+
+use super::{BitsPerPixel, DisplayTiming};
+use crate::ccu::Ccu;
+use crate::pac::ccu::{BusClockGating1, BusSoftReset1, DeClockConfig};
+use crate::pac::de::{BusConfig, GateConfig, ResetConfig, SelConfig};
+use crate::pac::de_mixer::{
+    bld::{InSize, OutputSize},
+    global::{GlobalControl, GlobalSize},
+    ui::{Attr, OvlSize, Size},
+    NUM_CHANNELS, NUM_CHANNEL_CONFIGS, NUM_UI_CHANNELS,
+};
+use crate::pac::{ccu::CCU, de::DE, de_mixer::MIXER1, sysc::SYSC};
+use embedded_time::rate::Hertz;
+
+pub struct DisplayEngine2 {
+    mixer: MIXER1,
+    de: DE,
+}
+
+impl DisplayEngine2 {
+    pub(crate) fn new(mixer: MIXER1, de: DE, ccu: &mut Ccu) -> Self {
         // Set SRAM for video use
         let sysc = unsafe { &mut *SYSC::mut_ptr() };
         let val = sysc.sram_ctrl.read();
         let val = val & !(0x01 << 24);
         sysc.sram_ctrl.write(val);
 
-        clock_set_pll10(432_000_000, ccu);
+        ccu.set_pll_de(Hertz::new(432_000_000));
 
-        let ccu = unsafe { &mut *CCU::mut_ptr() };
+        let raw_ccu = unsafe { &mut *CCU::mut_ptr() };
 
         // Set DE parent to pll10
-        ccu.de_clk_cfg.modify(DeClockConfig::ClockSel::PllDe);
+        raw_ccu.de_clk_cfg.modify(DeClockConfig::ClockSel::PllDe);
 
         // Set ahb gating to pass
-        ccu.bsr1.modify(BusSoftReset1::De::Clear);
-        ccu.bsr1.modify(BusSoftReset1::De::Set);
-        ccu.bcg1.modify(BusClockGating1::De::Set);
+        ccu.bsr1.rstr().modify(BusSoftReset1::De::Clear);
+        ccu.bsr1.rstr().modify(BusSoftReset1::De::Set);
+        ccu.bcg1.enr().modify(BusClockGating1::De::Set);
 
         // Clock on
-        ccu.de_clk_cfg.modify(DeClockConfig::SClockGating::Set);
+        raw_ccu.de_clk_cfg.modify(DeClockConfig::SClockGating::Set);
+
+        DisplayEngine2 { mixer, de }
     }
 
-    pub(crate) fn de2_mode_set(&mut self, bpp: u32) {
-        // TODO -check this addr and the reg it goes into
-        let fb_addr = self.frame_buffer.as_ptr() as usize;
-        assert!(fb_addr <= core::u32::MAX as usize);
-        let fb_addr: u32 = fb_addr as u32;
-
+    pub(crate) fn set_mode(&mut self, fb_addr: u32, bpp: BitsPerPixel, timing: &DisplayTiming) {
         // Enable clock
         self.de.rst_cfg.modify(ResetConfig::Mux1::Set);
         self.de.gate_cfg.modify(GateConfig::Mux1::Set);
@@ -50,8 +58,8 @@ impl<'a> HdmiDisplay<'a> {
         self.mixer.global.status.write(0);
         self.mixer.global.dbuf.write(1);
         self.mixer.global.size.modify(
-            GlobalSize::SizeWidth::Field::new(self.timing.hactive.typ - 1).unwrap()
-                + GlobalSize::SizeHeight::Field::new(self.timing.vactive.typ - 1).unwrap(),
+            GlobalSize::SizeWidth::Field::new(timing.hactive.typ - 1).unwrap()
+                + GlobalSize::SizeHeight::Field::new(timing.vactive.typ - 1).unwrap(),
         );
 
         // memset vi block to zero
@@ -114,11 +122,11 @@ impl<'a> HdmiDisplay<'a> {
         self.mixer.bld.mode[0].write(0x03010301);
 
         self.mixer.bld.output_size.modify(
-            OutputSize::SizeWidth::Field::new(self.timing.hactive.typ - 1).unwrap()
-                + OutputSize::SizeHeight::Field::new(self.timing.vactive.typ - 1).unwrap(),
+            OutputSize::SizeWidth::Field::new(timing.hactive.typ - 1).unwrap()
+                + OutputSize::SizeHeight::Field::new(timing.vactive.typ - 1).unwrap(),
         );
 
-        if self.timing.flags.interlaced() {
+        if timing.flags.interlaced() {
             unimplemented!();
         }
         self.mixer.bld.out_ctl.write(0);
@@ -126,8 +134,8 @@ impl<'a> HdmiDisplay<'a> {
 
         self.mixer.bld.attr[0].fcolor.write(0xff000000);
         self.mixer.bld.attr[0].in_size.modify(
-            InSize::SizeWidth::Field::new(self.timing.hactive.typ - 1).unwrap()
-                + InSize::SizeHeight::Field::new(self.timing.vactive.typ - 1).unwrap(),
+            InSize::SizeWidth::Field::new(timing.hactive.typ - 1).unwrap()
+                + InSize::SizeHeight::Field::new(timing.vactive.typ - 1).unwrap(),
         );
 
         // Disable all other units
@@ -154,46 +162,20 @@ impl<'a> HdmiDisplay<'a> {
             .modify(Attr::Format::XRgb8888 + Attr::Enable::Set);
 
         self.mixer.ui[0].cfg[0].size.modify(
-            Size::SizeWidth::Field::new(self.timing.hactive.typ - 1).unwrap()
-                + Size::SizeHeight::Field::new(self.timing.vactive.typ - 1).unwrap(),
+            Size::SizeWidth::Field::new(timing.hactive.typ - 1).unwrap()
+                + Size::SizeHeight::Field::new(timing.vactive.typ - 1).unwrap(),
         );
         self.mixer.ui[0].cfg[0].coord.write(0);
         self.mixer.ui[0].cfg[0]
             .pitch
-            .write((bpp / 8) * self.timing.hactive.typ);
+            .write((bpp / 8) * timing.hactive.typ);
         self.mixer.ui[0].cfg[0].top_laddr.write(fb_addr);
         self.mixer.ui[0].ovl_size.modify(
-            OvlSize::SizeWidth::Field::new(self.timing.hactive.typ - 1).unwrap()
-                + OvlSize::SizeHeight::Field::new(self.timing.vactive.typ - 1).unwrap(),
+            OvlSize::SizeWidth::Field::new(timing.hactive.typ - 1).unwrap()
+                + OvlSize::SizeHeight::Field::new(timing.vactive.typ - 1).unwrap(),
         );
 
         // Apply settings
         self.mixer.global.dbuf.write(1);
-    }
-}
-
-fn clock_set_pll10(clk: u32, _ccu: &mut Ccu) {
-    // TODO
-    let ccu = unsafe { &mut *CCU::mut_ptr() };
-
-    // 12 MHz steps
-    let m = 2;
-    if clk == 0 {
-        ccu.pll_de.modify(PllDeControl::Enable::Clear);
-    } else {
-        let n = clk / (Clocks::OSC_24M_FREQ / m);
-        let factor_n = n - 1;
-        let factor_m = m - 1;
-        // PLL10 rate = 24000000 * n / m
-        ccu.pll_de.modify(
-            PllDeControl::Enable::Set
-                + PllDeControl::Mode::Integer
-                + PllDeControl::FactorN::Field::new(factor_n).unwrap()
-                + PllDeControl::PreDivM::Field::new(factor_m).unwrap(),
-        );
-
-        while !ccu.pll_de.is_set(PllDeControl::Lock::Read) {
-            asm::nop();
-        }
     }
 }

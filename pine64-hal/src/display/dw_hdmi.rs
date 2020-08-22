@@ -1,7 +1,14 @@
-use crate::display::HdmiDisplay;
-use crate::hal::ccu::Ccu;
-use crate::hal::pac::ccu::{BusClockGating1, BusSoftReset1, Tcon1ClockConfig, CCU};
-use crate::hal::pac::hdmi;
+//! DesignWare HDMI bridge
+
+use super::DisplayTiming;
+use crate::ccu::Ccu;
+use crate::delay::delay_ms;
+use crate::pac::hdmi::{self, PhyPll, HDMI};
+
+// TODO
+// - use Hertz/KiloHertz
+// - move the HDMI phy ops to here
+//use embedded_time::rate::Hertz;
 
 pub const HDMI_EDID_BLOCK_SIZE: usize = 128;
 
@@ -176,89 +183,183 @@ impl HdmiReg {
     }
 }
 
-fn div_round_up(n: u32, d: u32) -> u32 {
-    (n + d - 1) / d
+pub struct DwHdmi {
+    pub(crate) hdmi: HDMI,
 }
 
-impl<'a> HdmiDisplay<'a> {
-    pub(crate) fn dw_hdmi_init(&mut self) {
+impl DwHdmi {
+    pub(crate) fn new(hdmi: HDMI) -> Self {
         use HdmiReg::*;
+
+        let mut h = DwHdmi { hdmi };
 
         // Disable IH mute interrupts
-        self.hdmi_write(IhMute, 0x3);
+        h.hdmi_write(IhMute, 0x3);
 
         // Enable i2c master done irq
-        self.hdmi_write(I2cmInt, !0x04);
+        h.hdmi_write(I2cmInt, !0x04);
 
         // Enable i2c client nack % arbitration error irq
-        self.hdmi_write(I2cmCtlInt, !0x44);
+        h.hdmi_write(I2cmCtlInt, !0x44);
+
+        h
     }
 
-    pub(crate) fn dw_hdmi_enable(&mut self, ccu: &mut Ccu) {
-        self.dw_hdmi_av_composer();
+    pub(crate) fn enable(&mut self, timing: &DisplayTiming, ccu: &mut Ccu) {
+        self.av_composer(timing);
 
-        self.phy_cfg(self.timing.pixel_clock.typ, ccu);
+        self.phy_cfg(timing.pixel_clock.typ, ccu);
 
-        self.dw_hdmi_enable_video_path();
+        self.enable_video_path();
 
-        assert_eq!(self.timing.hdmi_monitor, false, "TODO - only DVI for now");
+        assert_eq!(timing.hdmi_monitor, false, "TODO - only DVI for now");
 
-        self.dw_hdmi_video_packetize();
-        self.dw_hdmi_video_csc();
-        self.dw_hdmi_video_sample();
+        self.video_packetize();
+        self.video_csc();
+        self.video_sample();
 
-        self.dw_hdmi_clear_overflow();
+        self.clear_overflow();
     }
 
-    pub(crate) fn dw_hdmi_lcdc_init(&mut self, bpp: u32, hal_provided_ccu: &mut Ccu) {
-        // Assumes mux=1, HDMI
-        let div = div_round_up(
-            super::clock_get_pll3(hal_provided_ccu),
-            self.timing.pixel_clock.typ,
-        );
-        let mux = 1;
+    pub(crate) fn read_edid_block(&mut self, edid_block: &mut [u8; HDMI_EDID_BLOCK_SIZE]) {
+        self.read_edid(BLOCK_0, edid_block);
 
-        // TODO
-        let ccu = unsafe { &mut *CCU::mut_ptr() };
-
-        if mux == 0 {
-            unimplemented!();
-        } else {
-            // Reset
-            ccu.bsr1.modify(BusSoftReset1::Tcon1::Clear);
-            ccu.bsr1.modify(BusSoftReset1::Tcon1::Set);
-
-            // Clock on
-            ccu.bcg1.modify(BusClockGating1::Tcon1::Set);
-            ccu.tcon1_clk_cfg.modify(
-                Tcon1ClockConfig::DivRatioM::Field::new(div - 1).unwrap()
-                    + Tcon1ClockConfig::SClockGating::Set,
-            );
+        if edid_block[0x7E] != 0 {
+            todo!("read EDID ext block")
         }
-
-        self.lcdc_init();
-        self.lcdc_tcon1_mode_set();
-        self.lcdc_enable(bpp);
     }
 
-    fn dw_hdmi_av_composer(&mut self) {
+    // TODO - timeout
+    fn read_edid(&mut self, block_index: usize, edid_block: &mut [u8; HDMI_EDID_BLOCK_SIZE]) {
         use HdmiReg::*;
 
-        let hbl =
-            self.timing.hback_porch.typ + self.timing.hfront_porch.typ + self.timing.hsync_len.typ;
-        let vbl =
-            self.timing.vback_porch.typ + self.timing.vfront_porch.typ + self.timing.vsync_len.typ;
+        // Set ddc i2c clk which devided from ddc_clk to 100khz
+        self.hdmi_write(SsSclHCnt0, I2C_CLK_HIGH);
+        self.hdmi_write(SsSclLCnt0, I2C_CLK_LOW);
+        self.hdmi_mod(I2cmDiv, DIV_FAST_STD_MODE, DIV_STD_MODE);
+
+        self.hdmi_write(I2cmSlave, SLAVE_DDC_ADDR);
+        self.hdmi_write(I2cmSegAddr, SEGADDR_DDC);
+        self.hdmi_write(I2cmSegPtr, 0);
+        if block_index != 0 {
+            todo!("block >> 1");
+        }
+
+        for n in 0..HDMI_EDID_BLOCK_SIZE {
+            self.hdmi_write(I2cmAddr, n as u8);
+
+            self.hdmi_write(I2cmOp, OP_RD8);
+
+            self.wait_i2c_done(10);
+
+            edid_block[n] = self.hdmi_read(I2cmDataI);
+        }
+    }
+
+    fn phy_cfg(&mut self, mpixel_clock: u32, ccu: &mut Ccu) {
+        let phy_div = self.pll_set(mpixel_clock / 1000, ccu);
+        self.phy_set(mpixel_clock, phy_div);
+    }
+
+    fn phy_set(&mut self, clock: u32, phy_div: u32) {
+        let div = Self::get_phy_divider(clock);
+
+        // No docs...
+        match div {
+            2 => {
+                self.hdmi.phy_pll.write(0x39dc5040);
+                self.hdmi.phy_clk.write(0x80084380 | (phy_div - 1));
+                delay_ms(10);
+                self.hdmi.phy_unk3.write(0x00000001);
+                self.hdmi.phy_pll.modify(PhyPll::B25::Set);
+                delay_ms(100);
+                let tmp = (self.hdmi.phy_status.read() & 0x1_F800) >> 11;
+                self.hdmi
+                    .phy_pll
+                    .modify(PhyPll::B31::Set + PhyPll::B30::Set);
+                self.hdmi
+                    .phy_pll
+                    .modify(PhyPll::F0::Field::new(tmp).unwrap());
+                self.hdmi.phy_ctrl.write(0x01FFFF7F);
+                self.hdmi.phy_unk1.write(0x8063a800);
+                self.hdmi.phy_unk2.write(0x0F81C485);
+            }
+            _ => unimplemented!(), // TODO - use an enum for exh match
+        }
+    }
+
+    fn pll_set(&mut self, clk_khz: u32, ccu: &mut Ccu) -> u32 {
+        let mut best_div = 0;
+        let mut best_n = 0;
+        let mut best_m = 0;
+        let mut best_diff = 0x0FFFFFFF;
+
+        for div in 1..=16 {
+            let target = clk_khz * div;
+
+            if target < 192000 {
+                continue;
+            }
+            if target > 912000 {
+                continue;
+            }
+
+            for m in 1..=16 {
+                let n = (m * target) / 24000;
+
+                if (n >= 1) && (n <= 128) {
+                    let value = (24000 * n) / m / div;
+                    let diff = clk_khz - value;
+                    if diff < best_diff {
+                        best_diff = diff;
+                        best_m = m;
+                        best_n = n;
+                        best_div = div;
+                    }
+                }
+            }
+        }
+
+        // TODO
+        //assert_ne!(best_diff, 0);
+        assert_ne!(best_div, 0);
+        assert_ne!(best_m, 0);
+        assert_ne!(best_n, 0);
+
+        ccu.set_pll_video0_factors(best_m, best_n);
+
+        best_div
+    }
+
+    fn get_phy_divider(clock: u32) -> u32 {
+        // No docs...
+        if clock <= 27000000 {
+            11
+        } else if clock <= 74250000 {
+            4
+        } else if clock <= 148500000 {
+            2
+        } else {
+            1
+        }
+    }
+
+    fn av_composer(&mut self, timing: &DisplayTiming) {
+        use HdmiReg::*;
+
+        let hbl = timing.hback_porch.typ + timing.hfront_porch.typ + timing.hsync_len.typ;
+        let vbl = timing.vback_porch.typ + timing.vfront_porch.typ + timing.vsync_len.typ;
 
         // Set up FC_INVIDCONF
         let mut inv_val = FC_INVIDCONF_HDCP_KEEPOUT_INACTIVE;
 
-        if self.timing.flags.vsync_high() {
+        if timing.flags.vsync_high() {
             inv_val |= FC_INVIDCONF_VSYNC_IN_POLARITY_ACTIVE_HIGH;
         } else {
             inv_val |= FC_INVIDCONF_VSYNC_IN_POLARITY_ACTIVE_LOW;
         }
 
-        if self.timing.flags.hsync_high() {
+        if timing.flags.hsync_high() {
             inv_val |= FC_INVIDCONF_HSYNC_IN_POLARITY_ACTIVE_HIGH;
         } else {
             inv_val |= FC_INVIDCONF_HSYNC_IN_POLARITY_ACTIVE_LOW;
@@ -271,7 +372,7 @@ impl<'a> HdmiDisplay<'a> {
             inv_val |= FC_INVIDCONF_DE_IN_POLARITY_ACTIVE_LOW;
         }
 
-        if self.timing.hdmi_monitor {
+        if timing.hdmi_monitor {
             inv_val |= FC_INVIDCONF_DVI_MODEZ_HDMI_MODE;
         } else {
             inv_val |= FC_INVIDCONF_DVI_MODEZ_DVI_MODE;
@@ -284,12 +385,12 @@ impl<'a> HdmiDisplay<'a> {
         self.hdmi_write(FcInvIdConf, inv_val);
 
         // Set up horizontal active pixel width
-        self.hdmi_write(FcInHActv1, (self.timing.hactive.typ >> 8) as u8);
-        self.hdmi_write(FcInHActv0, self.timing.hactive.typ as u8);
+        self.hdmi_write(FcInHActv1, (timing.hactive.typ >> 8) as u8);
+        self.hdmi_write(FcInHActv0, timing.hactive.typ as u8);
 
         // Set up vertical active lines
-        self.hdmi_write(FcInVActv1, (self.timing.vactive.typ >> 8) as u8);
-        self.hdmi_write(FcInVActv0, self.timing.vactive.typ as u8);
+        self.hdmi_write(FcInVActv1, (timing.vactive.typ >> 8) as u8);
+        self.hdmi_write(FcInVActv0, timing.vactive.typ as u8);
 
         // Set up horizontal blanking pixel region width
         self.hdmi_write(FcInHBlank1, (hbl >> 8) as u8);
@@ -299,21 +400,21 @@ impl<'a> HdmiDisplay<'a> {
         self.hdmi_write(FcInVBlank, vbl as u8);
 
         // Set up hsync active edge delay width (in pixel clks)
-        self.hdmi_write(FcHSyncInDelay1, (self.timing.hfront_porch.typ >> 8) as u8);
-        self.hdmi_write(FcHSyncInDelay0, self.timing.hfront_porch.typ as u8);
+        self.hdmi_write(FcHSyncInDelay1, (timing.hfront_porch.typ >> 8) as u8);
+        self.hdmi_write(FcHSyncInDelay0, timing.hfront_porch.typ as u8);
 
         // Set up hsync active pulse width (in pixel clks)
-        self.hdmi_write(FcVSyncInDelay, self.timing.vfront_porch.typ as u8);
+        self.hdmi_write(FcVSyncInDelay, timing.vfront_porch.typ as u8);
 
         // Set up hsync active pulse width (in pixel clks)
-        self.hdmi_write(FcHSyncInWidth1, (self.timing.hsync_len.typ >> 8) as u8);
-        self.hdmi_write(FcHSyncInWidth0, self.timing.hsync_len.typ as u8);
+        self.hdmi_write(FcHSyncInWidth1, (timing.hsync_len.typ >> 8) as u8);
+        self.hdmi_write(FcHSyncInWidth0, timing.hsync_len.typ as u8);
 
         // Set up vsync active edge delay (in lines)
-        self.hdmi_write(FcVSyncInWidth, self.timing.vsync_len.typ as u8);
+        self.hdmi_write(FcVSyncInWidth, timing.vsync_len.typ as u8);
     }
 
-    fn dw_hdmi_enable_video_path(&mut self) {
+    fn enable_video_path(&mut self) {
         use HdmiReg::*;
 
         // Control period minimum duration
@@ -344,7 +445,7 @@ impl<'a> HdmiDisplay<'a> {
         self.hdmi_write(McFlowCtrl, MC_FLOWCTRL_FEED_THROUGH_OFF_CSC_BYPASS);
     }
 
-    fn dw_hdmi_video_packetize(&mut self) {
+    fn video_packetize(&mut self) {
         use HdmiReg::*;
 
         let color_depth = 0;
@@ -395,11 +496,11 @@ impl<'a> HdmiDisplay<'a> {
         self.hdmi_mod(VpConf, VP_CONF_OUTPUT_SELECTOR_MASK, output_select);
     }
 
-    fn dw_hdmi_video_csc(&mut self) {
+    fn video_csc(&mut self) {
         // TODO - my setup bails out early, need to put this logic back together
     }
 
-    fn dw_hdmi_video_sample(&mut self) {
+    fn video_sample(&mut self) {
         use HdmiReg::*;
 
         // TODO - handle all of the MEDIA_BUS_FMT_* variants
@@ -424,7 +525,7 @@ impl<'a> HdmiDisplay<'a> {
     }
 
     // Workaround to clear the overflow condition
-    fn dw_hdmi_clear_overflow(&mut self) {
+    fn clear_overflow(&mut self) {
         use HdmiReg::*;
 
         // TMDS software reset
@@ -434,41 +535,6 @@ impl<'a> HdmiDisplay<'a> {
 
         for _ in 0..4 {
             self.hdmi_write(FcInvIdConf, val);
-        }
-    }
-
-    pub(crate) fn dw_hdmi_read_edid(&mut self) {
-        self.hdmi_read_edid(BLOCK_0);
-
-        if self.edid_block[0x7E] != 0 {
-            todo!("read EDID ext block")
-        }
-    }
-
-    // TODO - timeout
-    fn hdmi_read_edid(&mut self, block: usize) {
-        use HdmiReg::*;
-
-        // Set ddc i2c clk which devided from ddc_clk to 100khz
-        self.hdmi_write(SsSclHCnt0, I2C_CLK_HIGH);
-        self.hdmi_write(SsSclLCnt0, I2C_CLK_LOW);
-        self.hdmi_mod(I2cmDiv, DIV_FAST_STD_MODE, DIV_STD_MODE);
-
-        self.hdmi_write(I2cmSlave, SLAVE_DDC_ADDR);
-        self.hdmi_write(I2cmSegAddr, SEGADDR_DDC);
-        self.hdmi_write(I2cmSegPtr, 0);
-        if block != 0 {
-            todo!("block >> 1");
-        }
-
-        for n in 0..HDMI_EDID_BLOCK_SIZE {
-            self.hdmi_write(I2cmAddr, n as u8);
-
-            self.hdmi_write(I2cmOp, OP_RD8);
-
-            self.wait_i2c_done(10);
-
-            self.edid_block[n] = self.hdmi_read(I2cmDataI);
         }
     }
 

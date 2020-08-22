@@ -6,8 +6,8 @@ edition = "2018"
 
 [dependencies]
 
-[dependencies.pine64-lts-bsp]
-path = "../../pine64-lts-bsp"
+[dependencies.pine64-hal]
+path = "../../pine64-hal"
 
 [dependencies.pine64-boot]
 path = "../../pine64-boot"
