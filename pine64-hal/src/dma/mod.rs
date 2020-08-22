@@ -3,26 +3,18 @@
 //! Some of this implementation was scraped from:
 //! https://github.com/stm32-rs/stm32f7xx-hal
 
-// https://github.com/stm32-rs/stm32f7xx-hal/blob/master/src/dma.rs
-//
-// https://github.com/torvalds/linux/blob/master/drivers/dma/sun6i-dma.c
-//
-// https://github.com/torvalds/linux/blob/master/drivers/dma/sun6i-dma.c#L1159
-//
-// take a look at https://crates.io/crates/embedded-dma
-
 // TODO
 // - move chan_num field a typenum type state
 // - finish the impl to allow peripheral/mem transfers, currently focused on
 //   mem-to-mem only
 // - add src/dst cached support once caches are enabled
-// - sync fences/barriers
+// - consider using https://crates.io/crates/embedded-dma
 
 use crate::ccu::Ccu;
 use crate::pac::{
     ccu::{BusClockGating0, BusSoftReset0},
-    dma::channel::{ChannelDescAddr, ChannelEnable},
-    dma::{AutoGating, IrqEnable, IrqPending, Security, Status, DMA},
+    dma::channel::ChannelEnable,
+    dma::{AutoGating, Security, Status, DMA},
 };
 use as_slice::AsSlice;
 use core::{
@@ -68,11 +60,6 @@ impl DmaExt for DMA {
         ccu.bsr0.rstr().modify(BusSoftReset0::Dma::Set);
         ccu.bcg0.enr().modify(BusClockGating0::Dma::Set);
 
-        // TODO
-        for _ in 0..10000 {
-            asm::nop();
-        }
-
         let mut dma = unsafe { DMA::from_paddr() };
 
         dma.auto_gating.modify(AutoGating::MasterClock::Enable);
@@ -114,6 +101,9 @@ where
         SrcWord: SupportedWordSize,
         DstWord: SupportedWordSize,
     {
+        // TODO
+        // - check descriptor for half-word alignment
+        // - check descriptor address
         assert!(src_buffer.size() <= u32::max_value() as usize);
         assert!(dst_buffer.size() <= u32::max_value() as usize);
         assert!(src_buffer.size() == dst_buffer.size());
@@ -122,16 +112,13 @@ where
 
         let transfer_size_bytes = src_buffer.size() as u32;
 
-        // TODO - check descriptor for half-word alignment
-        // - check descriptor address
-
         let mut config = Config(0);
         config.set_src_drq_port(DrqPort::SdRam);
         config.set_dst_drq_port(DrqPort::SdRam);
         config.set_src_address_mode(AddressMode::Linear);
         config.set_dst_address_mode(AddressMode::Linear);
 
-        // TODO
+        // TODO - config or trait provided
         config.set_src_burst_length(BurstLength::Bytes4);
         config.set_dst_burst_length(BurstLength::Bytes4);
 
@@ -224,57 +211,6 @@ impl ChannelNumber {
 
 impl Channel {
     fn is_active(&self) -> bool {
-        // TESTING TODO
-        //if self.dma.irq_pending.is_set(IrqPending::Ch0Queue::Read) {
-        //    panic!("IrqPending::Ch0Queue");
-        //}
-
-        for _ in 0..10000 {
-            asm::nop();
-        }
-
-        // TODO
-        //let val = self.dma.irq_pending.read();
-
-        // 0x1 CH0_BUSY
-        //let val = self.dma.status.read();
-
-        // 0xFFFFFFFF
-        // 0xFFFFFF7F
-        //let val = self.dma.channels[0].desc_addr.read();
-
-        // 0xFFFFFFFF
-        //let val = self.dma.channels[0].config.read();
-
-        // 0x1C0_210C
-        //let val = &self.dma.channels[0].config as *const _ as usize;
-
-        // 0xFFFF7FFF
-        // 0xFFFFEFFF
-        //let val = self.dma.channels[0].cur_src.read();
-
-        // 0x1FFFFFF
-        //let val = self.dma.channels[0].bcnt_left.read();
-
-        // 0xFFFFF
-        //let val = self.dma.channels[0].param.read();
-
-        // 0
-        //let val = self.dma.channels[0].mode.read();
-
-        // 0x8400BE20
-        //let val = self.dma.channels[0].former_desc_addr.read();
-
-        // 0
-        //let val = self.dma.channels[0].pkg_cnt.read();
-
-        // 0x01C0_2130
-        //let val = &self.dma.channels[0].pkg_cnt as *const _ as usize;
-
-        //        if val != 0xFFFFFFFF {
-        //            panic!("0x{:X}", val);
-        //        }
-
         match self.chan_num {
             ChannelNumber::Ch0 => self.dma.status.is_set(Status::Ch0Busy::Read),
         }
@@ -282,10 +218,6 @@ impl Channel {
 
     fn enable(&mut self) {
         let chan = self.chan_num.into_index();
-
-        // TODO just testing this here for now
-        //self.dma.irq.modify(IrqEnable::Ch0QueueIrqEnable::Set);
-
         self.dma.channels[chan]
             .enable
             .modify(ChannelEnable::Enable::Set);
@@ -294,13 +226,6 @@ impl Channel {
     fn set_desc_addr(&mut self, desc: &Descriptor) {
         let addr = desc.as_ptr() as u32;
         let chan = self.chan_num.into_index();
-
-        //panic!("addr 0x{:X}", addr);
-
-        //        self.dma.channels[chan].desc_addr.modify(
-        //            ChannelDescAddr::Addr::Field::new(addr).unwrap() +
-        // ChannelDescAddr::AddrHigh::Clear,        );
-
         self.dma.channels[chan].desc_addr.write(addr);
     }
 
