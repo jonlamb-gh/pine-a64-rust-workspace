@@ -12,11 +12,3 @@ pub mod gpio;
 pub mod prelude;
 pub mod serial;
 pub mod units;
-
-pub mod state {
-    /// Indicates that a peripheral is enabled
-    pub struct Enabled;
-
-    /// Indicates that a peripheral is disabled
-    pub struct Disabled;
-}

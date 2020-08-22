@@ -10,6 +10,7 @@ cortex-a = "3.0"
 nb = "0.1"
 bitfield = "0.13"
 embedded-time = "0.7"
+as-slice = "0.1"
 
 [dependencies.embedded-hal]
 features = ["unproven"]

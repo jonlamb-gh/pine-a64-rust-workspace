@@ -242,7 +242,7 @@ register! {
     u32,
     RW,
     Fields [
-        Dma WIDTH(U32) OFFSET(U6),
+        Dma WIDTH(U1) OFFSET(U6),
     ]
 }
 

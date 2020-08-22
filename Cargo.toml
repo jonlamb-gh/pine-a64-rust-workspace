@@ -7,4 +7,5 @@ members = [
     "pine64-lts-bsp",
     "examples/uart0",
     "examples/hdmi-raw-display",
+    "examples/mem2mem-dma",
 ]

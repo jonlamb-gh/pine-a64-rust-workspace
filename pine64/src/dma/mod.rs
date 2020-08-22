@@ -17,15 +17,6 @@ register! {
     u32,
     RW,
     Fields [
-        Bits WIDTH(U32) OFFSET(U0)
-    ]
-}
-
-register! {
-    IrqPending,
-    u32,
-    RW,
-    Fields [
         Ch0HalfPkgIrqEnable WIDTH(U1) OFFSET(U0),
         Ch0PkgIrqEnable WIDTH(U1) OFFSET(U1),
         Ch0QueueIrqEnable WIDTH(U1) OFFSET(U2),
@@ -50,6 +41,38 @@ register! {
         Ch7HalfPkgIrqEnable WIDTH(U1) OFFSET(U28),
         Ch7PkgIrqEnable WIDTH(U1) OFFSET(U29),
         Ch7QueueIrqEnable WIDTH(U1) OFFSET(U30),
+    ]
+}
+
+register! {
+    IrqPending,
+    u32,
+    RW,
+    Fields [
+        Ch0HalfPkg WIDTH(U1) OFFSET(U0),
+        Ch0Pkg WIDTH(U1) OFFSET(U1),
+        Ch0Queue WIDTH(U1) OFFSET(U2),
+        Ch1HalfPkg WIDTH(U1) OFFSET(U4),
+        Ch1Pkg WIDTH(U1) OFFSET(U5),
+        Ch1Queue WIDTH(U1) OFFSET(U6),
+        Ch2HalfPkg WIDTH(U1) OFFSET(U8),
+        Ch2Pkg WIDTH(U1) OFFSET(U9),
+        Ch2Queue WIDTH(U1) OFFSET(U10),
+        Ch3HalfPkg WIDTH(U1) OFFSET(U12),
+        Ch3Pkg WIDTH(U1) OFFSET(U13),
+        Ch3Queue WIDTH(U1) OFFSET(U14),
+        Ch4HalfPkg WIDTH(U1) OFFSET(U16),
+        Ch4Pkg WIDTH(U1) OFFSET(U17),
+        Ch4Queue WIDTH(U1) OFFSET(U18),
+        Ch5HalfPkg WIDTH(U1) OFFSET(U20),
+        Ch5Pkg WIDTH(U1) OFFSET(U21),
+        Ch5Queue WIDTH(U1) OFFSET(U22),
+        Ch6HalfPkg WIDTH(U1) OFFSET(U24),
+        Ch6Pkg WIDTH(U1) OFFSET(U25),
+        Ch6Queue WIDTH(U1) OFFSET(U26),
+        Ch7HalfPkg WIDTH(U1) OFFSET(U28),
+        Ch7Pkg WIDTH(U1) OFFSET(U29),
+        Ch7Queue WIDTH(U1) OFFSET(U30),
     ]
 }
 

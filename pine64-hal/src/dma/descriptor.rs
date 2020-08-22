@@ -17,20 +17,29 @@ pub struct Descriptor {
     pub config: Config,
     pub src_addr: u32,
     pub dst_addr: u32,
+    /// Length in bytes
     pub length: u32,
     pub param: Param,
     pub next_addr: u32,
 }
 
 impl Descriptor {
-    #[inline]
-    pub fn as_ptr(&self) -> *const Self {
-        self as *const _
+    pub const LAST_ADDR: u32 = 0xFFFF_F800;
+
+    pub const fn new() -> Self {
+        Descriptor {
+            config: Config(0),
+            src_addr: 0,
+            dst_addr: 0,
+            length: 0,
+            param: Param(0),
+            next_addr: Self::LAST_ADDR,
+        }
     }
 
     #[inline]
-    pub fn as_paddr(&self) -> usize {
-        self.as_ptr() as usize
+    pub(crate) fn as_ptr(&self) -> *const Self {
+        self as *const _
     }
 }
 
@@ -41,8 +50,8 @@ impl Default for Descriptor {
         config.set_dst_drq_port(DrqPort::SdRam);
         config.set_src_address_mode(AddressMode::Linear);
         config.set_dst_address_mode(AddressMode::Linear);
-        config.set_src_burst_length(BurstLength::Four);
-        config.set_dst_burst_length(BurstLength::Four);
+        config.set_src_burst_length(BurstLength::Bytes4);
+        config.set_dst_burst_length(BurstLength::Bytes4);
         config.set_src_data_width(DataWidth::Bits8);
         config.set_dst_data_width(DataWidth::Bits8);
 
@@ -55,7 +64,7 @@ impl Default for Descriptor {
             dst_addr: 0,
             length: 0,
             param,
-            next_addr: 0,
+            next_addr: Self::LAST_ADDR,
         }
     }
 }
@@ -105,10 +114,10 @@ pub enum AddressMode {
 /// Burst length in bytes
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum BurstLength {
-    One,
-    Four,
-    Eight,
-    Sixteen,
+    Bytes1,
+    Bytes4,
+    Bytes8,
+    Bytes16,
 }
 
 /// Data width in bits
@@ -157,19 +166,19 @@ impl Config {
 
     pub fn set_src_burst_length(&mut self, burst: BurstLength) {
         match burst {
-            BurstLength::One => self.set_src_burst(0b00),
-            BurstLength::Four => self.set_src_burst(0b01),
-            BurstLength::Eight => self.set_src_burst(0b10),
-            BurstLength::Sixteen => self.set_src_burst(0b11),
+            BurstLength::Bytes1 => self.set_src_burst(0b00),
+            BurstLength::Bytes4 => self.set_src_burst(0b01),
+            BurstLength::Bytes8 => self.set_src_burst(0b10),
+            BurstLength::Bytes16 => self.set_src_burst(0b11),
         }
     }
 
     pub fn set_dst_burst_length(&mut self, burst: BurstLength) {
         match burst {
-            BurstLength::One => self.set_dst_burst(0b00),
-            BurstLength::Four => self.set_dst_burst(0b01),
-            BurstLength::Eight => self.set_dst_burst(0b10),
-            BurstLength::Sixteen => self.set_dst_burst(0b11),
+            BurstLength::Bytes1 => self.set_dst_burst(0b00),
+            BurstLength::Bytes4 => self.set_dst_burst(0b01),
+            BurstLength::Bytes8 => self.set_dst_burst(0b10),
+            BurstLength::Bytes16 => self.set_dst_burst(0b11),
         }
     }
 
