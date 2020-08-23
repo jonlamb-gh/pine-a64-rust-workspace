@@ -2,6 +2,7 @@
 
 // TODO
 // - embd-hal trait and impl over real timers
+// - use the high-speed timer here
 
 use cortex_a::asm;
 

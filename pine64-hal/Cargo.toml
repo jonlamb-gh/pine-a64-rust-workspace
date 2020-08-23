@@ -16,6 +16,10 @@ as-slice = "0.1"
 features = ["unproven"]
 version = "0.2"
 
+[dependencies.void]
+default-features = false
+version = "1.0"
+
 [dependencies.nom]
 version = "5.1"
 default-features = false

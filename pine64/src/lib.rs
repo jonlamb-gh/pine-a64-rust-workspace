@@ -15,6 +15,7 @@ pub mod pio;
 pub mod sysc;
 pub mod tcon0;
 pub mod tcon1;
+pub mod timer;
 pub mod uart0;
 pub mod uart1;
 pub mod uart2;

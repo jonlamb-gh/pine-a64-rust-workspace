@@ -6,6 +6,7 @@ members = [
     "pine64-hal",
     "pine64-lts-bsp",
     "examples/uart0",
+    "examples/timer",
     "examples/hdmi-raw-display",
     "examples/hdmi-raw-display-dma",
     "examples/mem2mem-dma",

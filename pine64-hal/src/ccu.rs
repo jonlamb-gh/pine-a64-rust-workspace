@@ -36,8 +36,8 @@ pub struct Clocks {
 }
 
 impl Clocks {
-    pub const OSC_24M_FREQ: u32 = 24_000_000;
-    //const OSC_32K_FREQ: usize = 32_768;
+    pub const OSC_24M_FREQ: Hertz = Hertz(24_000_000);
+    pub const OSC_32K_FREQ: Hertz = Hertz(32_768);
     //const OSC_I16M_FREQ: usize = 16_000_000;
 
     pub fn read() -> Self {
@@ -74,7 +74,7 @@ impl Clocks {
         } else {
             8
         };
-        let pll_cpu = (Self::OSC_24M_FREQ * pll_cpu_n * pll_cpu_k) / (pll_cpu_m * pll_cpu_div_p);
+        let pll_cpu = (Self::OSC_24M_FREQ.0 * pll_cpu_n * pll_cpu_k) / (pll_cpu_m * pll_cpu_div_p);
 
         let pll_p0_k = 1 + ccu
             .pll_periph0
@@ -88,10 +88,10 @@ impl Clocks {
             .val();
 
         // PLL_PERIPH0(1X) = 24MHz * N * K/2
-        let pll_periph0_1x = Self::OSC_24M_FREQ * pll_p0_n * (pll_p0_k / 2);
+        let pll_periph0_1x = Self::OSC_24M_FREQ.0 * pll_p0_n * (pll_p0_k / 2);
 
         // PLL_PERIPH0(2X) = 24MHz * N * K
-        let pll_periph0_2x = Self::OSC_24M_FREQ * pll_p0_n * pll_p0_k;
+        let pll_periph0_2x = Self::OSC_24M_FREQ.0 * pll_p0_n * pll_p0_k;
 
         // AHB1
         let ahb1_pre_div = 1 + ccu
@@ -149,7 +149,7 @@ impl Clocks {
             ahb1: Hertz::new(ahb1_clk),
             ahb2: Hertz::new(ahb2_clk),
             apb1: Hertz::new(apb1_clk),
-            apb2: Hertz::new(apb2_clk),
+            apb2: Hertz::new(apb2_clk.0),
         }
     }
 
@@ -290,7 +290,7 @@ impl Ccu {
         if clk.0 == 0 {
             ccu.pll_video0.modify(PllVideo0Control::Enable::Clear);
         } else {
-            let n = clk.0 / (Clocks::OSC_24M_FREQ / m);
+            let n = clk.0 / (Clocks::OSC_24M_FREQ.0 / m);
             let factor_n = n - 1;
             let factor_m = m - 1;
             // PLL3 rate = 24000000 * n / m
@@ -337,7 +337,7 @@ impl Ccu {
         if clk.0 == 0 {
             ccu.pll_de.modify(PllDeControl::Enable::Clear);
         } else {
-            let n = clk.0 / (Clocks::OSC_24M_FREQ / m);
+            let n = clk.0 / (Clocks::OSC_24M_FREQ.0 / m);
             let factor_n = n - 1;
             let factor_m = m - 1;
             // PLL10 rate = 24000000 * n / m

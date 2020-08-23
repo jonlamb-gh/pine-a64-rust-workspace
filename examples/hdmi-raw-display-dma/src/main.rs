@@ -99,10 +99,9 @@ fn kernel_entry() -> ! {
             let txfr = txfr.start(&mut dma);
             let res = txfr.wait(&mut dma);
 
-            let (free_desc, free_back_buffer_mem, free_frame_buffer_mem) = res.free();
-            desc = free_desc;
-            back_buffer_mem = free_back_buffer_mem;
-            frame_buffer_mem = free_frame_buffer_mem;
+            desc = res.desc;
+            back_buffer_mem = res.src_buffer;
+            frame_buffer_mem = res.dst_buffer;
         }
     }
 }

@@ -78,9 +78,9 @@ impl DmaExt for DMA {
 #[derive(Debug)]
 pub struct TransferResources<SrcBuf, DstBuf> {
     // TODO - desc could be a slice, to-be-chained/linked
-    desc: Pin<&'static mut Descriptor>,
-    src_buffer: Pin<SrcBuf>,
-    dst_buffer: Pin<DstBuf>,
+    pub desc: Pin<&'static mut Descriptor>,
+    pub src_buffer: Pin<SrcBuf>,
+    pub dst_buffer: Pin<DstBuf>,
 }
 
 impl<SrcBuf, DstBuf> TransferResources<SrcBuf, DstBuf>
@@ -140,10 +140,6 @@ where
             src_buffer,
             dst_buffer,
         }
-    }
-
-    pub fn free(self) -> (Pin<&'static mut Descriptor>, Pin<SrcBuf>, Pin<DstBuf>) {
-        (self.desc, self.src_buffer, self.dst_buffer)
     }
 }
 
