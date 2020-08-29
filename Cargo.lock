@@ -53,9 +53,9 @@ dependencies = [
 
 [[package]]
 name = "embedded-time"
-version = "0.9.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba60f86bc5d7631945a6982ae035b5531b8717551ff80eeb5b6c011813c6be5b"
+checksum = "bb234982020886c2f30a99ae5ff5c8de237e72bfdc464f06e5b83c8dd177e190"
 dependencies = [
  "num",
 ]
@@ -88,6 +88,22 @@ dependencies = [
 
 [[package]]
 name = "hdmi-raw-display-dma"
+version = "0.1.0"
+dependencies = [
+ "pine64-boot",
+ "pine64-hal",
+]
+
+[[package]]
+name = "hs-timer"
+version = "0.1.0"
+dependencies = [
+ "pine64-boot",
+ "pine64-hal",
+]
+
+[[package]]
+name = "hs-timer-delay"
 version = "0.1.0"
 dependencies = [
  "pine64-boot",

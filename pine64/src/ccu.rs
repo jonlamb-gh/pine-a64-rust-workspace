@@ -147,6 +147,7 @@ register! {
     RW,
     Fields [
         Dma WIDTH(U1) OFFSET(U6),
+        HsTimer WIDTH(U1) OFFSET(U19),
     ]
 }
 
@@ -243,6 +244,7 @@ register! {
     RW,
     Fields [
         Dma WIDTH(U1) OFFSET(U6),
+        HsTimer WIDTH(U1) OFFSET(U19),
     ]
 }
 

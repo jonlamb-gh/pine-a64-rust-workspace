@@ -1,10 +1,14 @@
 //! Timers
 
-use crate::ccu::Clocks;
+use crate::ccu::{Ccu, Clocks};
 use crate::hal::timer::{Cancel, CountDown, Periodic};
-use crate::pac::timer::{Control, IrqEnable, IrqStatus, TIMER};
+use crate::pac::ccu::{BusClockGating0, BusSoftReset0};
+use crate::pac::hstimer::{self, HSTIMER};
+use crate::pac::timer::{
+    Control, IrqEnable, IrqStatus, RegisterBlock as TimerRegisterBlock, TIMER,
+};
 use core::convert::Infallible;
-use core::marker::PhantomData;
+use core::ops::{Deref, DerefMut};
 use cortex_a::asm;
 use embedded_time::rate::Hertz;
 use void::Void;
@@ -12,7 +16,6 @@ use void::Void;
 // TODO
 // - macro impl for timer 0/1
 // - prescale config
-// - high-speed timer to back the Delay impl's
 
 pub trait TimerExt {
     type Parts;
@@ -57,7 +60,7 @@ pub enum ClockSource {
 }
 
 impl ClockSource {
-    fn clock(self) -> Hertz {
+    fn frequency(self) -> Hertz {
         match self {
             ClockSource::Osc24M => Clocks::OSC_24M_FREQ,
             ClockSource::Osc32K => Clocks::OSC_32K_FREQ,
@@ -67,30 +70,25 @@ impl ClockSource {
 
 /// Hardware timer
 pub struct Timer<TIM> {
-    tim: TIMER,
-    clock: ClockSource,
+    tim: TIM,
+    clock_src: ClockSource,
+    clock: Hertz,
     timeout: Hertz,
-    _t: PhantomData<TIM>,
 }
 
 impl Timer<TIM0> {
-    pub fn tim0<T>(_tim: TIM0, timeout: T, clock: ClockSource) -> Self
-    where
-        T: Into<Hertz>,
-    {
+    pub fn timer0(tim: TIM0, clock: ClockSource) -> Self {
         // TIMER doesn't have reset or gating CCU registers
 
         let mut timer = Timer {
-            tim: unsafe { TIMER::from_paddr() },
-            clock,
+            tim,
+            clock_src: clock,
+            clock: clock.frequency(),
             timeout: Hertz(0),
-            _t: PhantomData,
         };
 
         timer.disable();
         timer.unlisten(Event::TimeOut);
-
-        timer.start(timeout);
 
         timer
     }
@@ -126,10 +124,9 @@ impl CountDown for Timer<TIM0> {
         self.disable();
 
         self.timeout = timeout.into();
-        let clock = self.clock.clock();
-        let ticks = clock.0 / self.timeout.0;
+        let ticks = self.clock.0 / self.timeout.0;
 
-        let clock_src = match self.clock {
+        let clock_src = match self.clock_src {
             ClockSource::Osc24M => Control::ClockSrc::Clock24M,
             ClockSource::Osc32K => Control::ClockSrc::Clock32K,
         };
@@ -155,7 +152,7 @@ impl CountDown for Timer<TIM0> {
         {
             Err(nb::Error::WouldBlock)
         } else {
-            self.tim.irq_status.modify(IrqEnable::Timer0IrqEnable::Set);
+            self.tim.irq_status.modify(IrqStatus::Timer0IrqPending::Set);
             Ok(())
         }
     }
@@ -166,7 +163,110 @@ impl Cancel for Timer<TIM0> {
 
     fn cancel(&mut self) -> Result<(), Self::Error> {
         self.disable();
-
         Ok(())
+    }
+}
+
+impl Timer<HSTIMER> {
+    pub fn hstimer(tim: HSTIMER, clocks: Clocks, ccu: &mut Ccu) -> Self {
+        ccu.bsr0.rstr().modify(BusSoftReset0::HsTimer::Clear);
+        ccu.bsr0.rstr().modify(BusSoftReset0::HsTimer::Set);
+        ccu.bcg0.enr().modify(BusClockGating0::HsTimer::Set);
+
+        let mut timer = Timer {
+            tim,
+            clock_src: ClockSource::Osc24M, // Not used by HS timer
+            clock: clocks.ahb1(),
+            timeout: Hertz(0),
+        };
+
+        timer.disable();
+        timer.unlisten(Event::TimeOut);
+
+        timer
+    }
+
+    pub fn unlisten(&mut self, event: Event) {
+        match event {
+            Event::TimeOut => {
+                self.tim
+                    .irq_enable
+                    .modify(hstimer::IrqEnable::Enable::Clear);
+            }
+        }
+    }
+
+    fn enable(&mut self) {
+        self.tim.ctrl.modify(hstimer::Control::Enable::Set);
+    }
+
+    fn disable(&mut self) {
+        self.tim.ctrl.modify(hstimer::Control::Enable::Clear);
+    }
+}
+
+impl Periodic for Timer<HSTIMER> {}
+
+impl CountDown for Timer<HSTIMER> {
+    type Time = Hertz;
+
+    fn start<T>(&mut self, timeout: T)
+    where
+        T: Into<Hertz>,
+    {
+        self.disable();
+
+        self.timeout = timeout.into();
+
+        let ticks_lo = self.clock.0 / self.timeout.0;
+
+        self.tim
+            .intv_hi
+            .modify(hstimer::IntervalHigh::Value::Field::new(0).unwrap());
+        self.tim.intv_lo.write(ticks_lo);
+
+        self.tim
+            .ctrl
+            .modify(hstimer::Control::Mode::Continuous + hstimer::Control::Prescale::Div1);
+        self.tim.ctrl.modify(hstimer::Control::Reload::Set);
+
+        self.enable();
+    }
+
+    fn wait(&mut self) -> nb::Result<(), Void> {
+        if !self
+            .tim
+            .irq_status
+            .is_set(hstimer::IrqStatus::IrqPending::Read)
+        {
+            Err(nb::Error::WouldBlock)
+        } else {
+            self.tim
+                .irq_status
+                .modify(hstimer::IrqStatus::IrqPending::Set);
+            Ok(())
+        }
+    }
+}
+
+impl Cancel for Timer<HSTIMER> {
+    type Error = Infallible;
+
+    fn cancel(&mut self) -> Result<(), Self::Error> {
+        self.disable();
+        Ok(())
+    }
+}
+
+impl Deref for TIM0 {
+    type Target = TimerRegisterBlock;
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*TIMER::ptr() }
+    }
+}
+
+impl DerefMut for TIM0 {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *TIMER::mut_ptr() }
     }
 }

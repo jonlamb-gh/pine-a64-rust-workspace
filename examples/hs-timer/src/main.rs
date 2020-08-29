@@ -6,10 +6,10 @@ extern crate pine64_hal as hal;
 use core::fmt::Write;
 use hal::ccu::Clocks;
 use hal::console_writeln;
-use hal::pac::{ccu::CCU, pio::PIO, timer::TIMER, uart0::UART0, uart_common::NotConfigured};
+use hal::pac::{ccu::CCU, hstimer::HSTIMER, pio::PIO, uart0::UART0, uart_common::NotConfigured};
 use hal::prelude::*;
 use hal::serial::Serial;
-use hal::timer::{ClockSource, Timer};
+use hal::timer::Timer;
 
 fn kernel_entry() -> ! {
     let clocks = Clocks::read();
@@ -20,9 +20,7 @@ fn kernel_entry() -> ! {
     let pio = unsafe { PIO::from_paddr() };
     let gpio = pio.split(&mut ccu);
 
-    let tims = unsafe { TIMER::from_paddr() };
-    let timers = tims.split();
-    let tim0 = timers.tim0;
+    let hs_timer = unsafe { HSTIMER::from_paddr() };
 
     let tx = gpio.pb.pb8.into_alternate_af2();
     let rx = gpio.pb.pb9.into_alternate_af2();
@@ -31,11 +29,11 @@ fn kernel_entry() -> ! {
     let serial = Serial::uart0(uart0, (tx, rx), 115_200.bps(), clocks, &mut ccu);
     let (mut serial, _rx) = serial.split();
 
-    console_writeln!(serial, "Timer0 example");
+    console_writeln!(serial, "High-speed timer example");
 
     console_writeln!(serial, "{:#?}", clocks);
 
-    let mut timer = Timer::timer0(tim0, ClockSource::Osc24M);
+    let mut timer = Timer::hstimer(hs_timer, clocks, &mut ccu);
     timer.start(1_u32.Hz());
 
     let mut cntr: usize = 0;

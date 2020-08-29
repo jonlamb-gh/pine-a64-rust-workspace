@@ -9,10 +9,10 @@ use crate::pac::uart_common::{
     NotConfigured, Receive, ReceiveHolding, Status, Transmit, TransmitHolding,
 };
 use crate::pac::{uart0::UART0, uart1::UART1, uart2::UART2, uart3::UART3, uart4::UART4};
-use crate::units::Bps;
 use core::convert::Infallible;
 use core::fmt;
 use core::marker::PhantomData;
+use embedded_time::rate::BitsPerSecond;
 use nb::block;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -113,7 +113,7 @@ macro_rules! hal {
                 pub fn $uartX(
                     uart: $UARTX<RxTx>,
                     pins: PINS,
-                    baud_rate: Bps,
+                    baud_rate: BitsPerSecond,
                     clocks: Clocks,
                     ccu: &mut Ccu,
                 ) -> Self

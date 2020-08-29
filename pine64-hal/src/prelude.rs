@@ -5,5 +5,6 @@ pub use crate::hal::digital::v2::InputPin as _embedded_hal_digital_InputPin;
 pub use crate::hal::digital::v2::OutputPin as _embedded_hal_digital_OutputPin;
 pub use crate::hal::digital::v2::StatefulOutputPin as _embedded_hal_digital_StatefulOutputPin;
 pub use crate::hal::prelude::*;
+pub use crate::time::duration::Extensions as _pine64_hal_time_duration_Extensions;
+pub use crate::time::rate::Extensions as _pine64_hal_time_rate_Extensions;
 pub use crate::timer::TimerExt as _pine64_hal_timer_TimerExt;
-pub use crate::units::U32Ext as _pine64_hal_units_U32Ext;
