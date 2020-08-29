@@ -1,3 +1,5 @@
+//! Serial
+
 use crate::ccu::{Ccu, Clocks};
 use crate::gpio::{
     Alternate, AF0, AF1, AF2, PB0, PB1, PB2, PB3, PB8, PB9, PD0, PD1, PD2, PD3, PD4, PD5,

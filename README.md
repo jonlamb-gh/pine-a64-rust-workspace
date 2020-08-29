@@ -75,40 +75,14 @@ setenv bootimg 'tftp ${loadaddr} ${serverip}:${imgname}; dcache flush; dcache of
   * https://github.com/rust-embedded/cortex-m/pull/241
   * https://github.com/rust-embedded/cortex-m/pull/235
 - update the boot crate to use `llvm_asm!`
-- switch UART device to have aliased registers instead of multiple register blocks and type state
 - add all the PIO registers/pins/etc
 - gpio ExtiPin patterns
 - generate UART1-4 device/reg impls with a macro
+- switch UART device to have aliased registers instead of multiple register blocks and type state
 - CCU device for peripheral resets/etc
 - use Infallible instead of Void
 - BSP crates: pine-a64-lts and pinephone
 - PR on bounded-regs for having a field named `Width` breaking things
 
-
 Stuff for the PinePhone BSP crate
 - PinePhone debug UART is UART0, PB8/PB9
-
-this u-boot image works differently than upstream u-boot?
-https://github.com/apritzel/pine64
-https://github.com/apritzel/u-boot.git -b sunxi64-image-20180316
-sun50i-a64-lpddr3_defconfig
-
-using SPL from apritzel/u-boot.git works:
-
-```bash
-spl from https://github.com/apritzel/u-boot.git, branch: sunxi64-image-20180316
-sudo dd if=spl/sunxi-spl.bin of=/dev/sda bs=8k seek=1
-
-u-boot from upstream
-sudo dd if=u-boot.itb of=/dev/sda bs=8k seek=5
-```
-
-https://github.com/stm32-rs/stm32f1xx-hal
-https://github.com/stm32-rs/stm32f1xx-hal/blob/master/src/rcc.rs
-https://github.com/stm32-rs/stm32f1xx-hal/blob/master/src/gpio.rs
-
-https://github.com/japaric/stm32f30x-hal/blob/master/src/serial.rs
-
-https://github.com/stm32-rs/stm32f7xx-hal/blob/master/src/dma.rs
-
-https://www.freertos.org/Using-FreeRTOS-on-Cortex-A-Embedded-Processors.html
